@@ -12,6 +12,7 @@ pub struct Sample {
     pub cadence_rpm: Option<u8>,
     pub power_w: Option<u16>,
     pub distance_m: Option<f64>,
+    pub elev_gain_cum_m: Option<f32>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -113,6 +114,47 @@ impl Activity {
         }
     }
 
+    /// Compute cumulative elevation gain in meters with a hysteresis threshold.
+    ///
+    /// Anchor-based filter: we track a "confirmed" altitude anchor. When the
+    /// current altitude exceeds the anchor by > `threshold_m`, the excess is
+    /// added to cumulative gain and the anchor rises to the current altitude.
+    /// When the current altitude falls below the anchor by > `threshold_m`,
+    /// the anchor drops to the current altitude (but cumulative gain is NOT
+    /// decremented — elevation gain only counts upward motion).
+    ///
+    /// Samples without altitude carry forward the last computed gain (so the
+    /// output is dense on `elev_gain_cum_m` as long as at least one prior sample
+    /// had altitude). If no sample has altitude, the field stays None everywhere.
+    pub fn fill_elev_gain(&mut self, threshold_m: f32) {
+        let mut anchor: Option<f32> = None;
+        let mut cum: f32 = 0.0;
+        let mut any_alt = false;
+
+        for s in self.samples.iter_mut() {
+            match s.altitude_m {
+                Some(alt) => {
+                    any_alt = true;
+                    match anchor {
+                        None => anchor = Some(alt),
+                        Some(a) => {
+                            if alt > a + threshold_m {
+                                cum += alt - a;
+                                anchor = Some(alt);
+                            } else if alt < a - threshold_m {
+                                anchor = Some(alt);
+                            }
+                        }
+                    }
+                    s.elev_gain_cum_m = Some(cum);
+                }
+                None => {
+                    s.elev_gain_cum_m = if any_alt { Some(cum) } else { None };
+                }
+            }
+        }
+    }
+
     /// Like smooth_speed but for `altitude_m`.
     pub fn smooth_altitude(&mut self, window: Duration) {
         let mut ts = Vec::with_capacity(self.samples.len());
@@ -142,6 +184,7 @@ impl Sample {
             altitude_m: None, speed_mps: None,
             heart_rate_bpm: None, cadence_rpm: None,
             power_w: None, distance_m: None,
+            elev_gain_cum_m: None,
         }
     }
 }
@@ -158,7 +201,8 @@ mod tests {
             Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0,
                      altitude_m: Some(100.0), speed_mps: None,
                      heart_rate_bpm: None, cadence_rpm: None,
-                     power_w: None, distance_m: None },
+                     power_w: None, distance_m: None,
+                     elev_gain_cum_m: None },
         ];
         let a = Activity::from_samples(Utc.timestamp_opt(0, 0).unwrap(), samples);
         assert_eq!(a.samples.len(), 1);
@@ -314,5 +358,61 @@ mod tests {
             let v = a.samples[i].altitude_m.unwrap();
             assert!((v - 105.0).abs() < 1.5);
         }
+    }
+
+    #[test]
+    fn elev_gain_counts_net_climb() {
+        // 21 samples, altitude climbs linearly 100 → 200 (100m total gain).
+        let samples: Vec<Sample> = (0..21).map(|i| Sample {
+            t: Duration::from_secs(i as u64),
+            lat: 0.0, lon: 0.0,
+            altitude_m: Some(100.0 + (i as f32) * 5.0),  // 100, 105, 110, ..., 200
+            ..Sample::blank()
+        }).collect();
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.fill_elev_gain(3.0);
+        let total = a.samples.last().unwrap().elev_gain_cum_m.unwrap();
+        assert!((total - 100.0).abs() < 1.0, "got {}", total);
+    }
+
+    #[test]
+    fn elev_gain_ignores_noise_below_threshold() {
+        // 51 samples, altitude noisy ±1m around a linear climb 100 → 150 (50m net).
+        let samples: Vec<Sample> = (0..51).map(|i| {
+            let base = 100.0 + (i as f32);  // +1 m per sample over 50 samples -> +50 m
+            let noise = if i % 2 == 0 { -1.0 } else { 1.0 }; // ±1 m
+            Sample {
+                t: Duration::from_secs(i as u64),
+                lat: 0.0, lon: 0.0,
+                altitude_m: Some(base + noise),
+                ..Sample::blank()
+            }
+        }).collect();
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.fill_elev_gain(3.0);
+        let total = a.samples.last().unwrap().elev_gain_cum_m.unwrap();
+        // Net climb is ~50m; the hysteresis filter should keep it near 50, not
+        // inflate due to noise. Allow generous tolerance because hysteresis on
+        // linear + ±1m noise produces ~50m ± hysteresis.
+        assert!(total < 60.0 && total > 40.0, "got {}", total);
+    }
+
+    #[test]
+    fn elev_gain_does_not_subtract_on_descent() {
+        // 21 samples, altitude: 100 → 200 (first 11 samples), then 200 → 100 (last 10).
+        let samples: Vec<Sample> = (0..21).map(|i| {
+            let alt = if i <= 10 { 100.0 + (i as f32) * 10.0 }
+                      else { 200.0 - ((i - 10) as f32) * 10.0 };
+            Sample {
+                t: Duration::from_secs(i as u64),
+                lat: 0.0, lon: 0.0,
+                altitude_m: Some(alt),
+                ..Sample::blank()
+            }
+        }).collect();
+        let mut a = Activity::from_samples(Utc::now(), samples);
+        a.fill_elev_gain(3.0);
+        let total = a.samples.last().unwrap().elev_gain_cum_m.unwrap();
+        assert!((total - 100.0).abs() < 1.0, "got {}", total);
     }
 }

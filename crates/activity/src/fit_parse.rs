@@ -132,6 +132,7 @@ pub fn load_fit(path: &Path) -> Result<Activity, FitError> {
             cadence_rpm,
             power_w,
             distance_m,
+            elev_gain_cum_m: None,
         });
     }
 

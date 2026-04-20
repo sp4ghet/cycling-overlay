@@ -49,6 +49,7 @@ pub fn load_gpx(path: &Path) -> Result<Activity, GpxError> {
                     cadence_rpm: None,
                     power_w: None,
                     distance_m: None,
+                    elev_gain_cum_m: None,
                 });
             }
         }
