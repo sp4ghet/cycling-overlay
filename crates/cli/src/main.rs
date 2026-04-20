@@ -1,4 +1,5 @@
 mod args;
+mod ffmpeg;
 mod pipeline;
 mod run;
 
