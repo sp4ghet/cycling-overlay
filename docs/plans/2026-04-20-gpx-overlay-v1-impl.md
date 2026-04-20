@@ -20,7 +20,7 @@
 - **Sample-constructing helper** `Activity::from_samples(samples)` lets most tests skip real parsing.
 - **Golden-image tests** for render widgets: render a known scene, compare to a checked-in PNG with per-channel tolerance of 2 (accounts for font/AA variance). On mismatch, write `actual.png` and `diff.png` beside the golden for inspection.
 - **One integration test** in `crates/cli/tests/end_to_end.rs` invokes `ffmpeg` and `ffprobe`; guarded by `#[cfg_attr(not(feature = "ffmpeg-tests"), ignore)]` so it only runs when explicitly requested.
-- **Fixtures** in `examples/`: `short.gpx` (hand-written, ~20 points with altitude, HR not present), and `short.fit` (obtained from a public FIT SDK sample or user-supplied, ≤30s).
+- **Fixtures** in `examples/`: `short.gpx` (hand-written, ~20 points with altitude, HR not present), and `ride.fit` (seeded at repo root — a real ride supplied by the user; tests use a subslice when a short fixture is needed). Inter variable font is pre-staged at repo root `assets/Inter-VariableFont.ttf`; Task 16 moves it into `crates/render/assets/`.
 
 ---
 
@@ -332,7 +332,7 @@ git commit -m "Parse GPX into unified Sample model"
 ```rust
 #[test]
 fn fit_fixture_loads() {
-    let a = load_fit(std::path::Path::new("../../examples/short.fit")).unwrap();
+    let a = load_fit(std::path::Path::new("../../examples/ride.fit")).unwrap();
     assert!(a.samples.len() >= 2);
     assert!(a.samples.iter().any(|s| s.power_w.is_some())
          || a.samples.iter().any(|s| s.heart_rate_bpm.is_some()));
@@ -747,7 +747,7 @@ Render "HELLO" at (10, 50) with size 32 into a 200×100 pixmap; assert at least 
 
 **Step 3: Implement `TextCtx`** — holds `FontSystem` and `SwashCache` (expensive, build once, reuse). Method `draw(&mut self, pixmap: &mut Pixmap, text: &str, x: f32, y: f32, size: f32, color: Color)` that shapes and blits glyphs.
 
-Bundle Inter (OFL) as a static asset in `crates/render/assets/Inter-Regular.ttf` (download separately, commit the font). Load it into `FontSystem` so tests don't depend on system fonts.
+Move the pre-staged `assets/Inter-VariableFont.ttf` (at repo root) into `crates/render/assets/Inter-VariableFont.ttf` via `git mv`. Load it into `FontSystem` so tests don't depend on system fonts.
 
 **Step 4: Run, verify pass.**
 
