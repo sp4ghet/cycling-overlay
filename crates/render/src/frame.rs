@@ -3,19 +3,24 @@ use layout::{Layout, Widget};
 use std::time::Duration;
 use tiny_skia::{Color, Pixmap};
 
+use crate::text::TextCtx;
+
 /// Render one frame of the overlay into `pixmap`.
 ///
 /// This is the pure per-frame entry point — given an immutable layout and
 /// activity plus a time `t`, it clears the pixmap to transparent and draws
 /// every widget from `layout.widgets` into it.
 ///
-/// The caller is responsible for allocating the pixmap. `pixmap.width()` and
-/// `pixmap.height()` must match `layout.canvas.width`/`height`.
-#[allow(unused_variables)] // widget arms unfilled until Tasks 17-19
+/// The caller is responsible for allocating the pixmap and for keeping a
+/// long-lived `TextCtx` around. Constructing a `TextCtx` is expensive (parses
+/// the bundled TTF), so the caller should reuse one per thread across frames.
+/// `pixmap.width()` and `pixmap.height()` must match
+/// `layout.canvas.width`/`height`.
 pub fn render_frame(
     layout: &Layout,
     activity: &Activity,
     t: Duration,
+    text_ctx: &mut TextCtx,
     pixmap: &mut Pixmap,
 ) -> anyhow::Result<()> {
     if pixmap.width() != layout.canvas.width || pixmap.height() != layout.canvas.height {
@@ -31,8 +36,27 @@ pub fn render_frame(
 
     for widget in &layout.widgets {
         match widget {
-            Widget::Readout { .. } => {
-                // Implemented in Task 17.
+            Widget::Readout {
+                id: _,
+                metric,
+                rect,
+                label,
+                decimals,
+                font_size,
+            } => {
+                crate::widgets::readout::render_readout(
+                    pixmap,
+                    text_ctx,
+                    &layout.theme,
+                    &layout.units,
+                    *rect,
+                    metric,
+                    label,
+                    *decimals,
+                    *font_size,
+                    activity,
+                    t,
+                );
             }
             Widget::Course { .. } => {
                 // Implemented in Task 18.
@@ -100,10 +124,11 @@ mod tests {
     fn empty_layout_renders_transparent() {
         let layout = minimal_layout(100, 100, 30);
         let activity = one_sample_activity();
+        let mut ctx = TextCtx::new();
         let mut pix = Pixmap::new(100, 100).unwrap();
         // Pre-fill with red so a successful clear is observable.
         pix.fill(tiny_skia::Color::from_rgba8(255, 0, 0, 255));
-        render_frame(&layout, &activity, Duration::ZERO, &mut pix).unwrap();
+        render_frame(&layout, &activity, Duration::ZERO, &mut ctx, &mut pix).unwrap();
         // Every pixel must be fully transparent after render.
         assert!(
             pix.data().chunks_exact(4).all(|p| p[3] == 0),
@@ -115,8 +140,9 @@ mod tests {
     fn render_frame_fails_on_mismatched_pixmap_size() {
         let layout = minimal_layout(200, 100, 30);
         let activity = one_sample_activity();
+        let mut ctx = TextCtx::new();
         let mut pix = Pixmap::new(100, 100).unwrap();
-        let r = render_frame(&layout, &activity, Duration::ZERO, &mut pix);
+        let r = render_frame(&layout, &activity, Duration::ZERO, &mut ctx, &mut pix);
         assert!(r.is_err());
     }
 }
