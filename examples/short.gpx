@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1"
+     creator="gpx-overlay test fixture"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">
+  <trk>
+    <name>short out-and-back</name>
+    <trkseg>
+      <trkpt lat="0.0000000" lon="0.00000000">
+        <ele>100.0</ele>
+        <time>2024-06-01T06:00:00Z</time>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00009000">
+        <ele>110.0</ele>
+        <time>2024-06-01T06:00:01Z</time>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00018000">
+        <ele>120.0</ele>
+        <time>2024-06-01T06:00:02Z</time>
+        <extensions>
+          <gpxtpx:TrackPointExtension>
+            <gpxtpx:hr>130</gpxtpx:hr>
+          </gpxtpx:TrackPointExtension>
+          <power>180</power>
+        </extensions>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00027000">
+        <ele>130.0</ele>
+        <time>2024-06-01T06:00:03Z</time>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00036000">
+        <ele>140.0</ele>
+        <time>2024-06-01T06:00:04Z</time>
+        <extensions>
+          <gpxtpx:TrackPointExtension>
+            <gpxtpx:hr>140</gpxtpx:hr>
+          </gpxtpx:TrackPointExtension>
+          <power>195</power>
+        </extensions>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00045000">
+        <ele>150.0</ele>
+        <time>2024-06-01T06:00:05Z</time>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00054000">
+        <ele>160.0</ele>
+        <time>2024-06-01T06:00:06Z</time>
+        <extensions>
+          <gpxtpx:TrackPointExtension>
+            <gpxtpx:hr>150</gpxtpx:hr>
+          </gpxtpx:TrackPointExtension>
+          <power>210</power>
+        </extensions>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00063000">
+        <ele>170.0</ele>
+        <time>2024-06-01T06:00:07Z</time>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00072000">
+        <ele>180.0</ele>
+        <time>2024-06-01T06:00:08Z</time>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00081000">
+        <ele>190.0</ele>
+        <time>2024-06-01T06:00:09Z</time>
+        <extensions>
+          <gpxtpx:TrackPointExtension>
+            <gpxtpx:hr>160</gpxtpx:hr>
+          </gpxtpx:TrackPointExtension>
+          <power>235</power>
+        </extensions>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00090000">
+        <ele>200.0</ele>
+        <time>2024-06-01T06:00:10Z</time>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00081000">
+        <ele>190.0</ele>
+        <time>2024-06-01T06:00:11Z</time>
+        <extensions>
+          <gpxtpx:TrackPointExtension>
+            <gpxtpx:hr>165</gpxtpx:hr>
+          </gpxtpx:TrackPointExtension>
+          <power>240</power>
+        </extensions>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00072000">
+        <ele>180.0</ele>
+        <time>2024-06-01T06:00:12Z</time>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00063000">
+        <ele>170.0</ele>
+        <time>2024-06-01T06:00:13Z</time>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00054000">
+        <ele>160.0</ele>
+        <time>2024-06-01T06:00:14Z</time>
+        <extensions>
+          <gpxtpx:TrackPointExtension>
+            <gpxtpx:hr>155</gpxtpx:hr>
+          </gpxtpx:TrackPointExtension>
+          <power>220</power>
+        </extensions>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00045000">
+        <ele>150.0</ele>
+        <time>2024-06-01T06:00:15Z</time>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00036000">
+        <ele>140.0</ele>
+        <time>2024-06-01T06:00:16Z</time>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00027000">
+        <ele>130.0</ele>
+        <time>2024-06-01T06:00:17Z</time>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00018000">
+        <ele>120.0</ele>
+        <time>2024-06-01T06:00:18Z</time>
+      </trkpt>
+      <trkpt lat="0.0000000" lon="0.00009000">
+        <ele>110.0</ele>
+        <time>2024-06-01T06:00:19Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>
