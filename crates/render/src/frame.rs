@@ -74,8 +74,14 @@ pub fn render_frame(
                     t,
                 );
             }
-            Widget::ElevationProfile { .. } => {
-                // Implemented in Task 19.
+            Widget::ElevationProfile { id: _, rect } => {
+                crate::widgets::elevation_profile::render_elevation_profile(
+                    pixmap,
+                    &layout.theme,
+                    *rect,
+                    activity,
+                    t,
+                );
             }
         }
     }

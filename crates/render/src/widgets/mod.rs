@@ -1,4 +1,5 @@
 pub mod course;
+pub mod elevation_profile;
 pub mod readout;
 
 use tiny_skia::Color;

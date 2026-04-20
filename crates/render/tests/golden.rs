@@ -136,6 +136,72 @@ fn course_widget_matches_golden() {
     assert_golden(&pix, "course_mid.png");
 }
 
+#[test]
+fn elevation_profile_matches_golden() {
+    let layout = Layout {
+        version: 1,
+        canvas: Canvas {
+            width: 500,
+            height: 120,
+            fps: 30,
+        },
+        units: Units {
+            speed: SpeedUnit::Kmh,
+            distance: DistanceUnit::Km,
+            elevation: ElevationUnit::M,
+            temp: TempUnit::C,
+        },
+        theme: Theme {
+            font: "Inter".into(),
+            fg: "#ffffff".into(),
+            accent: "#ffcc00".into(),
+            shadow: None,
+        },
+        widgets: vec![Widget::ElevationProfile {
+            id: "elev".into(),
+            rect: Rect {
+                x: 20,
+                y: 20,
+                w: 460,
+                h: 80,
+            },
+        }],
+    };
+
+    // Triangle elevation: rises 0->100m over 0->500m distance, then back down
+    // to 0m at distance 1000m. The marker at t=10 lands at distance ~500m, on
+    // the peak.
+    let mut samples: Vec<Sample> = Vec::new();
+    for i in 0..=20 {
+        let d = i as f64 * 50.0;
+        let a = if i <= 10 {
+            i as f32 * 10.0
+        } else {
+            (20 - i) as f32 * 10.0
+        };
+        samples.push(Sample {
+            t: Duration::from_secs(i as u64),
+            lat: 0.0,
+            lon: 0.0,
+            altitude_m: Some(a),
+            speed_mps: None,
+            heart_rate_bpm: None,
+            cadence_rpm: None,
+            power_w: None,
+            distance_m: Some(d),
+            elev_gain_cum_m: None,
+            gradient_pct: None,
+        });
+    }
+    let activity = Activity::from_samples(Utc.timestamp_opt(0, 0).unwrap(), samples);
+
+    let mut ctx = TextCtx::new();
+    let mut pix = Pixmap::new(500, 120).unwrap();
+    render_frame(&layout, &activity, Duration::from_secs(10), &mut ctx, &mut pix).unwrap();
+
+    assert_golden(&pix, "elev_mid.png");
+}
+
 fn assert_golden(pix: &Pixmap, name: &str) {
     let golden_path = Path::new("tests/golden").join(name);
     let actual_img: RgbaImage =
