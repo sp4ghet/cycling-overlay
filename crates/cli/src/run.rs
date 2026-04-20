@@ -1,10 +1,18 @@
 use activity::{load_fit, load_gpx, metric_present_on_activity, Activity, Metric};
 use anyhow::{anyhow, Context, Result};
+use indicatif::{ProgressBar, ProgressStyle};
 use layout::{Layout, MetricCatalog};
+use rayon::iter::{ParallelBridge, ParallelIterator};
+use std::cell::RefCell;
 use std::fs;
+use std::sync::mpsc::sync_channel;
+use std::thread;
 use std::time::Duration;
+use tiny_skia::Pixmap;
 
 use crate::args::RenderArgs;
+use crate::ffmpeg::FfmpegWriter;
+use crate::pipeline::{FrameScheduler, ReorderBuffer};
 
 /// Everything a render path needs once parsing + validation have succeeded.
 pub struct Loaded {
@@ -106,6 +114,153 @@ pub fn load_and_validate(args: &RenderArgs) -> Result<Loaded> {
         to,
         warnings,
     })
+}
+
+/// Per-thread scratch buffers reused across frames.
+struct Scratch {
+    pixmap: Pixmap,
+    text: render::TextCtx,
+    width: u32,
+    height: u32,
+}
+
+thread_local! {
+    static SCRATCH: RefCell<Option<Scratch>> = const { RefCell::new(None) };
+}
+
+/// Run the parallel render pipeline to produce an overlay video.
+///
+/// The pipeline has three stages:
+///   1. A `FrameScheduler` emits `(idx, t)` pairs.
+///   2. Rayon workers render each frame into a thread-local `Pixmap` and send
+///      `(idx, bytes)` through a bounded mpsc channel.
+///   3. A dedicated flusher thread pushes incoming frames into a `ReorderBuffer`,
+///      drains contiguous runs, and writes them to ffmpeg in order.
+///
+/// The bounded channel provides back-pressure: when the flusher is slower than
+/// rendering, workers block on `send`, preventing unbounded memory growth.
+pub fn render(args: &RenderArgs) -> Result<()> {
+    // Hint rayon's thread count if user passed --threads.
+    // Best-effort: silently ignore if a pool is already built.
+    if let Some(n) = args.threads {
+        let _ = rayon::ThreadPoolBuilder::new().num_threads(n).build_global();
+    }
+
+    let loaded = load_and_validate(args)?;
+
+    // Print warnings up front (they shouldn't block rendering).
+    for w in &loaded.warnings {
+        match w {
+            layout::Warning::MetricAbsent { widget_id, metric } => {
+                eprintln!(
+                    "warning: widget '{}' references metric '{}' absent from activity",
+                    widget_id, metric
+                );
+            }
+        }
+    }
+
+    let total = {
+        let sch = FrameScheduler::new(loaded.from, loaded.to, loaded.fps);
+        sch.total_frames()
+    };
+    if total == 0 {
+        return Err(anyhow!("nothing to render: time range is empty"));
+    }
+
+    // Progress bar.
+    let pb = ProgressBar::new(total);
+    pb.set_style(
+        ProgressStyle::with_template("{bar:40.cyan/blue} {pos}/{len} frames | ETA {eta}")
+            .unwrap(),
+    );
+
+    // Bounded channel; capacity equals reorder-buffer cap so back-pressure
+    // aligns with the buffer.
+    const BUFFER_CAP: usize = 64;
+    let (tx, rx) = sync_channel::<(u64, Vec<u8>)>(BUFFER_CAP);
+
+    // Spawn flusher thread. It owns the FfmpegWriter and ReorderBuffer.
+    let out_path = args.output.clone();
+    let (w, h, fps) = (loaded.canvas_width, loaded.canvas_height, loaded.fps);
+    let qscale = args.qscale;
+    let pb_flush = pb.clone();
+    let flusher = thread::spawn(move || -> anyhow::Result<()> {
+        let mut writer = FfmpegWriter::new(w, h, fps, qscale, &out_path)?;
+        let mut buf = ReorderBuffer::new(BUFFER_CAP);
+        while let Ok((idx, bytes)) = rx.recv() {
+            buf.push(idx, bytes);
+            for ready in buf.drain_ready() {
+                writer
+                    .write_frame(&ready)
+                    .map_err(|e| anyhow!("ffmpeg write_frame failed: {}", e))?;
+                pb_flush.inc(1);
+            }
+        }
+        // Channel closed — drain anything left (shouldn't have gaps if
+        // every scheduled frame was sent).
+        for ready in buf.drain_ready() {
+            writer
+                .write_frame(&ready)
+                .map_err(|e| anyhow!("ffmpeg write_frame failed: {}", e))?;
+            pb_flush.inc(1);
+        }
+        writer.finish()
+    });
+
+    // Render in parallel. We borrow `layout` + `activity` for the duration
+    // of the parallel section; `par_bridge().try_for_each_init` is a blocking
+    // call, so these references remain valid.
+    let layout = &loaded.layout;
+    let activity = &loaded.activity;
+    let sch = FrameScheduler::new(loaded.from, loaded.to, loaded.fps);
+
+    let render_result: Result<()> = sch.par_bridge().try_for_each_init(
+        || tx.clone(),
+        |sender, (idx, t)| -> Result<()> {
+            SCRATCH.with(|cell| -> Result<()> {
+                let mut borrow = cell.borrow_mut();
+                // Lazily build the per-thread scratch or rebuild if the
+                // canvas size changed (should not happen within one run).
+                let need_new = match borrow.as_ref() {
+                    None => true,
+                    Some(s) => s.width != w || s.height != h,
+                };
+                if need_new {
+                    *borrow = Some(Scratch {
+                        pixmap: Pixmap::new(w, h)
+                            .ok_or_else(|| anyhow!("failed to allocate {}x{} pixmap", w, h))?,
+                        text: render::TextCtx::new(),
+                        width: w,
+                        height: h,
+                    });
+                }
+                let scratch = borrow.as_mut().unwrap();
+                render::render_frame(layout, activity, t, &mut scratch.text, &mut scratch.pixmap)?;
+                let bytes = scratch.pixmap.data().to_vec();
+                sender
+                    .send((idx, bytes))
+                    .map_err(|e| anyhow!("flusher channel closed unexpectedly: {}", e))?;
+                Ok(())
+            })
+        },
+    );
+
+    // Drop the original sender so the flusher observes channel close once all
+    // worker-cloned senders are dropped.
+    drop(tx);
+
+    // Join the flusher regardless of render_result so we don't leak the thread.
+    let flush_result = flusher
+        .join()
+        .map_err(|_| anyhow!("flusher thread panicked"))?;
+
+    pb.finish();
+
+    // Propagate errors. Prefer the render error since it's the upstream cause.
+    render_result?;
+    flush_result?;
+    Ok(())
 }
 
 /// Load + validate, then print a summary to stdout. Never writes any output file.

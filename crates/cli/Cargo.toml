@@ -11,6 +11,7 @@ path = "src/main.rs"
 activity = { path = "../activity" }
 layout = { path = "../layout" }
 render = { path = "../render" }
+tiny-skia = "0.11"
 clap = { version = "4", features = ["derive"] }
 indicatif = "0.17"
 rayon = "1"

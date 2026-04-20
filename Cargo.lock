@@ -527,6 +527,7 @@ dependencies = [
  "render",
  "serde_json",
  "tempfile",
+ "tiny-skia",
 ]
 
 [[package]]
