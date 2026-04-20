@@ -9,3 +9,4 @@ chrono.workspace = true
 thiserror.workspace = true
 gpx = "0.10"
 fitparser = "0.9"
+quick-xml = "0.36"
