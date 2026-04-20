@@ -69,10 +69,7 @@ mod tests {
     }
 
     #[test]
-    fn moving_avg_preserves_nans_as_skip() {
-        // NaN/None handling: this version uses Vec<f32> not Vec<Option<f32>>;
-        // NaN inputs flow through as NaN. Acceptance: test that zero-length
-        // input returns an empty Vec.
+    fn moving_avg_empty_input_returns_empty() {
         let ts: Vec<Duration> = vec![];
         let vs: Vec<f32> = vec![];
         let out = moving_avg_time(&ts, &vs, Duration::from_secs(3));
