@@ -1,4 +1,5 @@
 mod fit_parse;
+mod geo;
 mod gpx_parse;
 mod sample;
 
