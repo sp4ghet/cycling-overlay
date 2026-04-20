@@ -1,4 +1,5 @@
 mod args;
+mod pipeline;
 mod run;
 
 use args::{Args, Command};
