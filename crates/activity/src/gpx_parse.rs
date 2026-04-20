@@ -18,6 +18,8 @@ pub enum GpxError {
     Empty,
     #[error("GPX track point missing time information - required by this tool")]
     MissingTime,
+    #[error("GPX extension pass parsed {exts} trkpt extensions but coordinate pass produced {samples} samples — file may be malformed or mix trkpt with route/waypoint elements")]
+    ExtensionMismatch { exts: usize, samples: usize },
 }
 
 pub fn load_gpx(path: &Path) -> Result<Activity, GpxError> {
@@ -60,13 +62,17 @@ pub fn load_gpx(path: &Path) -> Result<Activity, GpxError> {
     // ourselves. Track points are matched positionally by document order,
     // which is exactly the order the gpx crate returns them in as well.
     let extensions = read_trkpt_extensions(path)?;
-    for (idx, ext) in extensions.into_iter().enumerate() {
-        if let Some(s) = samples.get_mut(idx) {
-            s.heart_rate_bpm = ext.hr;
-            s.power_w = ext.power;
-            if s.cadence_rpm.is_none() {
-                s.cadence_rpm = ext.cadence;
-            }
+    if extensions.len() != samples.len() {
+        return Err(GpxError::ExtensionMismatch {
+            exts: extensions.len(),
+            samples: samples.len(),
+        });
+    }
+    for (s, ext) in samples.iter_mut().zip(extensions.iter()) {
+        s.heart_rate_bpm = ext.hr;
+        s.power_w = ext.power;
+        if s.cadence_rpm.is_none() {
+            s.cadence_rpm = ext.cadence;
         }
     }
 
