@@ -164,6 +164,7 @@ mod tests {
             decimals: 1,
             font_size: 24.0,
             label_font_size: None,
+            unit_font_size: None,
         };
         let l = make_layout(vec![w], 1);
         let known = known_metrics();
@@ -192,6 +193,7 @@ mod tests {
             decimals: 0,
             font_size: 24.0,
             label_font_size: None,
+            unit_font_size: None,
         };
         let l = make_layout(vec![w], 1);
         let known = known_metrics();
@@ -220,6 +222,7 @@ mod tests {
             decimals: 0,
             font_size: 24.0,
             label_font_size: None,
+            unit_font_size: None,
         };
         let l = make_layout(vec![w], 1);
         // Catalog knows "power" but says it's absent on this activity.

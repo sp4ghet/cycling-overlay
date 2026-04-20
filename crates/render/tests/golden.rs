@@ -60,6 +60,7 @@ fn readout_speed_matches_golden() {
             decimals: 1,
             font_size: 72.0,
             label_font_size: None,
+            unit_font_size: None,
         }],
     };
     let samples = vec![Sample {

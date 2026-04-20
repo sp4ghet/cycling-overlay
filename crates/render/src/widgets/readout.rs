@@ -19,6 +19,7 @@ pub fn render_readout(
     decimals: u32,
     font_size: f32,
     label_font_size: Option<f32>,
+    unit_font_size: Option<f32>,
     activity: &Activity,
     t: Duration,
 ) {
@@ -49,12 +50,19 @@ pub fn render_readout(
     const UNIT_COL_FRAC: f32 = 0.7;
     let unit_col_left = rect.x as f32 + rect.w as f32 * UNIT_COL_FRAC;
     let gap = font_size * 0.15;
+    let unit_size = unit_font_size.unwrap_or(font_size);
 
     let num_w = text_ctx.measure_width(&value_str, font_size);
     let num_x = unit_col_left - gap - num_w;
     text_ctx.draw(pixmap, &value_str, num_x, value_y, font_size, fg);
     if !unit_str.is_empty() {
-        text_ctx.draw(pixmap, unit_str, unit_col_left, value_y, font_size, fg);
+        // Baseline-align the unit to the number. cosmic-text draws with `y`
+        // as the top of the layout box; the baseline sits ≈0.85 * font_size
+        // below that for Inter. Offset the unit's top by the baseline
+        // difference so the two baselines coincide.
+        const BASELINE_RATIO: f32 = 0.85;
+        let unit_y = value_y + (font_size - unit_size) * BASELINE_RATIO;
+        text_ctx.draw(pixmap, unit_str, unit_col_left, unit_y, unit_size, fg);
     }
 }
 

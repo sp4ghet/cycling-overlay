@@ -100,6 +100,11 @@ pub enum Widget {
         /// Label font size. When omitted, defaults to `font_size * 0.35`.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         label_font_size: Option<f32>,
+        /// Unit font size (e.g. "km/h", "W/kg"). When omitted, defaults to
+        /// `font_size`. When smaller, the unit baseline-aligns with the
+        /// number's baseline.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        unit_font_size: Option<f32>,
     },
     Course {
         id: String,
