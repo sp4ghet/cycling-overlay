@@ -1,0 +1,59 @@
+{
+    "version": 1,
+    "canvas": { "width": 1920, "height": 1080, "fps": 30 },
+    "units": { "speed": "kmh", "distance": "km", "elevation": "m", "temp": "c" },
+    "theme": {
+        "font": "Inter",
+        "fg": "#ffffff",
+        "accent": "#ffcc00",
+        "shadow": null
+    },
+    "widgets": [
+        {
+            "type": "readout", "id": "speed_readout",
+            "metric": "speed",
+            "rect": { "x": 80, "y": 880, "w": 280, "h": 140 },
+            "label": "SPEED", "decimals": 1, "font_size": 80.0
+        },
+        {
+            "type": "readout", "id": "distance_readout",
+            "metric": "distance",
+            "rect": { "x": 400, "y": 880, "w": 280, "h": 140 },
+            "label": "DIST", "decimals": 2, "font_size": 80.0
+        },
+        {
+            "type": "readout", "id": "elev_readout",
+            "metric": "altitude",
+            "rect": { "x": 720, "y": 880, "w": 260, "h": 140 },
+            "label": "ELEV", "decimals": 0, "font_size": 80.0
+        },
+        {
+            "type": "readout", "id": "elev_gain_readout",
+            "metric": "elev_gain",
+            "rect": { "x": 1020, "y": 880, "w": 280, "h": 140 },
+            "label": "GAIN", "decimals": 0, "font_size": 80.0
+        },
+        {
+            "type": "readout", "id": "gradient_readout",
+            "metric": "gradient",
+            "rect": { "x": 1340, "y": 880, "w": 220, "h": 140 },
+            "label": "GRADE", "decimals": 1, "font_size": 80.0
+        },
+        {
+            "type": "readout", "id": "time_readout",
+            "metric": "time_elapsed",
+            "rect": { "x": 1600, "y": 880, "w": 240, "h": 140 },
+            "label": "TIME", "decimals": 0, "font_size": 80.0
+        },
+        {
+            "type": "course", "id": "course_map",
+            "rect": { "x": 1560, "y": 60, "w": 300, "h": 300 },
+            "line_width": 4.0,
+            "dot_radius": 8.0
+        },
+        {
+            "type": "elevation_profile", "id": "elev_profile",
+            "rect": { "x": 60, "y": 60, "w": 620, "h": 140 }
+        }
+    ]
+}
