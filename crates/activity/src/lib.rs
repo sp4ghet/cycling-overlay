@@ -1,6 +1,7 @@
 mod fit_parse;
 mod geo;
 mod gpx_parse;
+mod interp;
 mod sample;
 mod smooth;
 

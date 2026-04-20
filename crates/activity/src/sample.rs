@@ -235,6 +235,55 @@ impl Activity {
         }
     }
 
+    /// Return an interpolated `Sample` at time `t` relative to the activity's start.
+    ///
+    /// - Clamps to first/last sample when `t` is outside the activity range.
+    /// - Panics if the activity has zero samples.
+    /// - Linear interpolation for: lat, lon, altitude_m, speed_mps, heart_rate_bpm,
+    ///   power_w, distance_m, elev_gain_cum_m, gradient_pct.
+    /// - Nearest-neighbor for: cadence_rpm (steps discontinuously in real data).
+    /// - Any continuous metric where either endpoint is None returns None.
+    pub fn sample_at(&self, t: Duration) -> Sample {
+        assert!(!self.samples.is_empty(), "sample_at on empty activity");
+
+        // Clamp.
+        let first = &self.samples[0];
+        if t <= first.t { return first.clone(); }
+        let last = self.samples.last().unwrap();
+        if t >= last.t { return last.clone(); }
+
+        // Binary search for the pair (i-1, i) bracketing t.
+        let idx = match self.samples.binary_search_by_key(&t, |s| s.t) {
+            Ok(i) => return self.samples[i].clone(),
+            Err(i) => i, // insertion point — prev is i-1, next is i
+        };
+        let lo = &self.samples[idx - 1];
+        let hi = &self.samples[idx];
+
+        let span = (hi.t - lo.t).as_secs_f64();
+        let u = if span > 0.0 {
+            (t - lo.t).as_secs_f64() / span
+        } else {
+            0.0
+        };
+        let u_f32 = u as f32;
+
+        use crate::interp::*;
+        Sample {
+            t,
+            lat: lerp_f64(lo.lat, hi.lat, u),
+            lon: lerp_f64(lo.lon, hi.lon, u),
+            altitude_m: lerp_opt_f32(lo.altitude_m, hi.altitude_m, u_f32),
+            speed_mps: lerp_opt_f32(lo.speed_mps, hi.speed_mps, u_f32),
+            heart_rate_bpm: lerp_opt_u8(lo.heart_rate_bpm, hi.heart_rate_bpm, u_f32),
+            cadence_rpm: nearest_opt_u8(lo.cadence_rpm, hi.cadence_rpm, u_f32),
+            power_w: lerp_opt_u16(lo.power_w, hi.power_w, u_f32),
+            distance_m: lerp_opt_f64(lo.distance_m, hi.distance_m, u),
+            elev_gain_cum_m: lerp_opt_f32(lo.elev_gain_cum_m, hi.elev_gain_cum_m, u_f32),
+            gradient_pct: lerp_opt_f32(lo.gradient_pct, hi.gradient_pct, u_f32),
+        }
+    }
+
     /// Like smooth_speed but for `altitude_m`.
     pub fn smooth_altitude(&mut self, window: Duration) {
         let mut ts = Vec::with_capacity(self.samples.len());
@@ -524,6 +573,86 @@ mod tests {
         let mut a = Activity::from_samples(Utc::now(), samples);
         a.fill_gradient(50.0);
         assert!(a.samples.iter().all(|s| s.gradient_pct.is_none()));
+    }
+
+    #[test]
+    fn sample_at_interpolates_speed_linearly() {
+        let s = vec![
+            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0,
+                     speed_mps: Some(10.0), ..Sample::blank() },
+            Sample { t: Duration::from_secs(10), lat: 0.0, lon: 0.0,
+                     speed_mps: Some(20.0), ..Sample::blank() },
+        ];
+        let a = Activity::from_samples(Utc::now(), s);
+        let mid = a.sample_at(Duration::from_secs(5));
+        assert!((mid.speed_mps.unwrap() - 15.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn sample_at_clamps_before_start() {
+        let s = vec![
+            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0,
+                     speed_mps: Some(10.0), ..Sample::blank() },
+            Sample { t: Duration::from_secs(10), lat: 0.0, lon: 0.0,
+                     speed_mps: Some(20.0), ..Sample::blank() },
+        ];
+        let a = Activity::from_samples(Utc::now(), s);
+        // Durations can't be negative, so "before start" means exactly 0.
+        let out = a.sample_at(Duration::ZERO);
+        assert_eq!(out.speed_mps, Some(10.0));
+    }
+
+    #[test]
+    fn sample_at_clamps_after_end() {
+        let s = vec![
+            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0,
+                     speed_mps: Some(10.0), ..Sample::blank() },
+            Sample { t: Duration::from_secs(10), lat: 0.0, lon: 0.0,
+                     speed_mps: Some(20.0), ..Sample::blank() },
+        ];
+        let a = Activity::from_samples(Utc::now(), s);
+        let out = a.sample_at(Duration::from_secs(100));
+        assert_eq!(out.speed_mps, Some(20.0));
+    }
+
+    #[test]
+    fn sample_at_interpolates_lat_lon() {
+        let s = vec![
+            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0, ..Sample::blank() },
+            Sample { t: Duration::from_secs(10), lat: 1.0, lon: 2.0, ..Sample::blank() },
+        ];
+        let a = Activity::from_samples(Utc::now(), s);
+        let mid = a.sample_at(Duration::from_secs(5));
+        assert!((mid.lat - 0.5).abs() < 1e-9);
+        assert!((mid.lon - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn sample_at_uses_nearest_for_cadence() {
+        let s = vec![
+            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0,
+                     cadence_rpm: Some(80), ..Sample::blank() },
+            Sample { t: Duration::from_secs(10), lat: 0.0, lon: 0.0,
+                     cadence_rpm: Some(90), ..Sample::blank() },
+        ];
+        let a = Activity::from_samples(Utc::now(), s);
+        let near_first = a.sample_at(Duration::from_secs(3));
+        assert_eq!(near_first.cadence_rpm, Some(80));
+        let near_second = a.sample_at(Duration::from_secs(7));
+        assert_eq!(near_second.cadence_rpm, Some(90));
+    }
+
+    #[test]
+    fn sample_at_none_when_either_endpoint_none() {
+        let s = vec![
+            Sample { t: Duration::from_secs(0), lat: 0.0, lon: 0.0,
+                     heart_rate_bpm: None, ..Sample::blank() },
+            Sample { t: Duration::from_secs(10), lat: 0.0, lon: 0.0,
+                     heart_rate_bpm: Some(150), ..Sample::blank() },
+        ];
+        let a = Activity::from_samples(Utc::now(), s);
+        let mid = a.sample_at(Duration::from_secs(5));
+        assert!(mid.heart_rate_bpm.is_none());
     }
 
     #[test]
