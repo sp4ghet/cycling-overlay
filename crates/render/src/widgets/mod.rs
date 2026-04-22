@@ -2,6 +2,7 @@ pub mod bar;
 pub mod course;
 pub mod elevation_profile;
 pub mod readout;
+pub mod scale;
 
 use tiny_skia::Color;
 
