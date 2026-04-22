@@ -21,6 +21,9 @@ pub(crate) fn frac(v: f32, min: f32, max: f32) -> f32 {
 /// closest representation of the semantic target (e.g. `0.05`, not
 /// `0.049999997`) when the f32 path would introduce a 1-ULP drift.
 pub(crate) fn nice_major_interval(min: f32, max: f32) -> f32 {
+    if !min.is_finite() || !max.is_finite() {
+        return 1.0;
+    }
     let range = ((max - min) as f64).abs();
     if range <= 0.0 {
         return 1.0;
@@ -59,6 +62,11 @@ pub(crate) fn to_skia_angle(deg_up_cw: f32) -> f32 {
 /// Linearly interpolate between angles from `start_deg` to `end_deg` at
 /// `frac` in [0, 1]. If `end_deg < start_deg`, adds 360° internally so the
 /// sweep wraps clockwise through the top.
+///
+/// `start_deg == end_deg` is treated as a zero sweep (the function returns
+/// `start_deg` for all `frac`), not a full 360° revolution. Widget
+/// configuration should avoid equal angles unless a degenerate render is
+/// intentional.
 pub(crate) fn angle_lerp(start_deg: f32, end_deg: f32, frac: f32) -> f32 {
     let end_eff = if end_deg >= start_deg {
         end_deg
@@ -122,5 +130,19 @@ mod tests {
             normalized < 1e-4 || (normalized - 360.0).abs() < 1e-4,
             "got {} (normalized {})", mid, normalized
         );
+    }
+
+    #[test]
+    fn nice_interval_handles_non_finite() {
+        assert_eq!(nice_major_interval(f32::NAN, 100.0), 1.0);
+        assert_eq!(nice_major_interval(0.0, f32::INFINITY), 1.0);
+        assert_eq!(nice_major_interval(f32::NEG_INFINITY, f32::INFINITY), 1.0);
+    }
+
+    #[test]
+    fn angle_lerp_equal_angles_is_zero_sweep() {
+        assert!((angle_lerp(45.0, 45.0, 0.0) - 45.0).abs() < 1e-4);
+        assert!((angle_lerp(45.0, 45.0, 0.5) - 45.0).abs() < 1e-4);
+        assert!((angle_lerp(45.0, 45.0, 1.0) - 45.0).abs() < 1e-4);
     }
 }
