@@ -87,6 +87,59 @@ pub struct Rect {
     pub h: u32,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum Orientation {
+    #[default]
+    Horizontal,
+    Vertical,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum IndicatorKind {
+    #[default]
+    Fill,
+    Rect,
+    Arrow,
+    Needle,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
+pub struct Indicator {
+    #[serde(default)]
+    pub kind: IndicatorKind,
+    #[serde(default)]
+    pub fill_under: bool,
+}
+
+fn default_show_numbers() -> bool {
+    true
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub struct Ticks {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub major_every: Option<f32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minor_every: Option<f32>,
+    #[serde(default = "default_show_numbers")]
+    pub show_numbers: bool,
+    #[serde(default)]
+    pub decimals: u32,
+}
+
+impl Default for Ticks {
+    fn default() -> Self {
+        Self {
+            major_every: None,
+            minor_every: None,
+            show_numbers: true,
+            decimals: 0,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Widget {
@@ -218,5 +271,46 @@ mod tests {
             Widget::Readout { .. } => {}
             _ => panic!("expected Readout variant"),
         }
+    }
+
+    #[test]
+    fn orientation_serde_snake_case() {
+        let j = serde_json::to_string(&Orientation::Horizontal).unwrap();
+        assert_eq!(j, "\"horizontal\"");
+        let j = serde_json::to_string(&Orientation::Vertical).unwrap();
+        assert_eq!(j, "\"vertical\"");
+        let h: Orientation = serde_json::from_str("\"horizontal\"").unwrap();
+        assert_eq!(h, Orientation::Horizontal);
+    }
+
+    #[test]
+    fn indicator_defaults_to_fill() {
+        let ind: Indicator = serde_json::from_str("{}").unwrap();
+        assert_eq!(ind.kind, IndicatorKind::Fill);
+        assert!(!ind.fill_under);
+    }
+
+    #[test]
+    fn indicator_kind_roundtrip() {
+        for (name, k) in [
+            ("fill", IndicatorKind::Fill),
+            ("rect", IndicatorKind::Rect),
+            ("arrow", IndicatorKind::Arrow),
+            ("needle", IndicatorKind::Needle),
+        ] {
+            let quoted = format!("\"{}\"", name);
+            let parsed: IndicatorKind = serde_json::from_str(&quoted).unwrap();
+            assert_eq!(parsed, k);
+            assert_eq!(serde_json::to_string(&k).unwrap(), quoted);
+        }
+    }
+
+    #[test]
+    fn ticks_defaults() {
+        let t: Ticks = serde_json::from_str("{}").unwrap();
+        assert_eq!(t.major_every, None);
+        assert_eq!(t.minor_every, None);
+        assert!(t.show_numbers);
+        assert_eq!(t.decimals, 0);
     }
 }
