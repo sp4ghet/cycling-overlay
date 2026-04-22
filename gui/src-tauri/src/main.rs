@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod binary;
+mod export;
 mod preview;
 mod progress;
 mod session;
@@ -18,6 +19,7 @@ fn main() {
         .manage(state::AppState::default())
         .manage(preview::TextState::default())
         .manage(watcher::WatcherHandle::default())
+        .manage(export::ExportHandle::default())
         .invoke_handler(tauri::generate_handler![
             hello_from_rust,
             session::session_load,
@@ -29,6 +31,8 @@ fn main() {
             preview::preview_frame,
             watcher::watch_layout,
             watcher::unwatch_layout,
+            export::start_export,
+            export::cancel_export,
         ])
         .setup(|_app| Ok(()))
         .run(tauri::generate_context!())

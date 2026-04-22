@@ -1533,6 +1533,7 @@ dependencies = [
  "anyhow",
  "base64 0.22.1",
  "layout",
+ "libc",
  "notify",
  "render",
  "serde",
