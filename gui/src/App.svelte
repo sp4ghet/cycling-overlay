@@ -1,18 +1,49 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
   import { onMount } from "svelte";
-  let message = "loading…";
+  import PreviewPane from "./components/PreviewPane.svelte";
+  import Seekbar from "./components/Seekbar.svelte";
+  import Sidebar from "./components/Sidebar.svelte";
+  import ExportFooter from "./components/ExportFooter.svelte";
+  import { sessionLoad } from "./lib/tauri";
+  import { session } from "./lib/stores";
+
   onMount(async () => {
     try {
-      message = await invoke<string>("hello_from_rust");
+      const s = await sessionLoad();
+      session.set(s);
     } catch (e) {
-      message = `error: ${e}`;
+      console.error("session_load failed:", e);
     }
   });
 </script>
 
-<main><h1>{message}</h1></main>
+<div class="app">
+  <main class="main">
+    <PreviewPane />
+    <Seekbar />
+  </main>
+  <Sidebar />
+  <ExportFooter />
+</div>
 
 <style>
-  main { padding: 2rem; font-family: system-ui, -apple-system, sans-serif; }
+  .app {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: 1fr auto;
+    grid-template-areas:
+      "main sidebar"
+      "footer footer";
+    height: 100vh;
+    width: 100vw;
+  }
+  .main {
+    grid-area: main;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+  :global(.sidebar) { grid-area: sidebar; overflow-y: auto; }
+  :global(.footer)  { grid-area: footer; }
 </style>
