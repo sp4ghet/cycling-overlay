@@ -8,6 +8,7 @@
     previewImage,
   } from "../lib/stores";
   import { loadActivity, loadLayout, watchLayout, previewFrame } from "../lib/tauri";
+  import CodecSelect from "./CodecSelect.svelte";
 
   async function pickInput() {
     const path = await open({
@@ -99,6 +100,29 @@
     <button on:click={pickOutput}>Browse…</button>
     <div class="path">{$session.output_path ?? "—"}</div>
   </div>
+
+  <CodecSelect />
+
+  <div class="row">
+    <label>Time range (seconds)</label>
+    <div class="time-row">
+      <input
+        type="number"
+        min="0"
+        step="1"
+        bind:value={$session.from_seconds}
+        placeholder="from"
+      />
+      <span>→</span>
+      <input
+        type="number"
+        min="0"
+        step="1"
+        bind:value={$session.to_seconds}
+        placeholder="to"
+      />
+    </div>
+  </div>
 </aside>
 
 <style>
@@ -135,4 +159,18 @@
     align-self: flex-start;
   }
   button:hover { background: #3a3a3a; }
+  .time-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .time-row input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.3rem;
+    background: #333;
+    color: #eee;
+    border: 1px solid #444;
+  }
+  .time-row span { color: #888; }
 </style>
