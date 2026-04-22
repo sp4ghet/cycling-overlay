@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod binary;
 mod session;
 
 #[tauri::command]
@@ -14,6 +15,8 @@ fn main() {
             hello_from_rust,
             session::session_load,
             session::session_save,
+            binary::probe_ffmpeg,
+            binary::probe_cli,
         ])
         .setup(|_app| Ok(()))
         .run(tauri::generate_context!())

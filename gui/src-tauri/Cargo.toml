@@ -16,9 +16,13 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 tokio = { version = "1", features = ["full"] }
 notify = "6"
+which = "6"
 activity = { path = "../../crates/activity" }
 layout = { path = "../../crates/layout" }
 render = { path = "../../crates/render" }
+
+[dev-dependencies]
+tempfile = "3"
 
 [features]
 default = ["custom-protocol"]
