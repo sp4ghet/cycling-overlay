@@ -161,16 +161,37 @@ pub fn render_meter(
             }
         }
 
-        // Unit label — identifies what the scale measures. Drawn once per
-        // widget in the top-right corner of the rect in the same font size
-        // as the tick numbers.
+        // Unit label — identifies what the scale measures. Placed just
+        // past the max-value tick's number so it stays close to the scale
+        // (top of a vertical meter, right end of a horizontal meter) and
+        // doesn't collide with the track on high-aspect-ratio rects.
         if ticks.show_numbers {
             let suffix = unit_suffix(metric, units);
             if !suffix.is_empty() {
-                let text_w = text_ctx.measure_width(suffix, number_font_size);
-                let x = rect.x as f32 + rect.w as f32 - text_w - 4.0;
-                let y = rect.y as f32 + 4.0;
-                text_ctx.draw(pixmap, suffix, x, y, number_font_size, fg);
+                let max_label = format!("{:.*}", ticks.decimals as usize, max);
+                let max_label_w = text_ctx.measure_width(&max_label, number_font_size);
+                const TICK_GAP: f32 = 4.0; // matches draw_tick_number
+                const UNIT_GAP: f32 = 6.0;
+                match orientation {
+                    Orientation::Horizontal => {
+                        // Max tick sits at the right end of the track with
+                        // its number centered on that x. Unit follows the
+                        // number's right edge on the same baseline.
+                        let number_right = track_x + track_w + max_label_w * 0.5;
+                        let x = number_right + UNIT_GAP;
+                        let y = track_y + track_h + major_len + TICK_GAP;
+                        text_ctx.draw(pixmap, suffix, x, y, number_font_size, fg);
+                    }
+                    Orientation::Vertical => {
+                        // Max tick sits at the top; its number is
+                        // left-anchored to the right of the tick end. Unit
+                        // continues past the number on the same line.
+                        let number_left = track_x + track_w + major_len + TICK_GAP;
+                        let x = number_left + max_label_w + UNIT_GAP;
+                        let y = track_y - number_font_size * 0.5;
+                        text_ctx.draw(pixmap, suffix, x, y, number_font_size, fg);
+                    }
+                }
             }
         }
     }

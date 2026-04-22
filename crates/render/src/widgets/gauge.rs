@@ -148,16 +148,29 @@ pub fn render_gauge(
             }
         }
 
-        // Unit label — tells the viewer what the scale represents. Drawn
-        // once per widget in the top-right corner of the rect, in the same
-        // font size as the tick numbers.
+        // Unit label — placed on the same line as the max-value tick
+        // number, just past its right edge. Keeps the unit visually
+        // attached to the scale rather than floating in a corner.
         if ticks.show_numbers {
             let suffix = unit_suffix(metric, units);
             if !suffix.is_empty() {
-                let text_w = text_ctx.measure_width(suffix, number_font_size);
-                let x = rect.x as f32 + rect.w as f32 - text_w - 4.0;
-                let y = rect.y as f32 + 4.0;
-                text_ctx.draw(pixmap, suffix, x, y, number_font_size, fg);
+                let deg_max = angle_lerp(start_deg, end_deg, 1.0);
+                let s_max = to_skia_angle(deg_max).to_radians();
+                let (cos_m, sin_m) = (s_max.cos(), s_max.sin());
+                let r_label = r_tick_inner + major_len + NUMBER_GAP + number_font_size * 0.5;
+                let cx_label = cx + r_label * cos_m;
+                let cy_label = cy - r_label * sin_m;
+
+                let max_label = format!("{:.*}", ticks.decimals as usize, max);
+                let max_label_w = text_ctx.measure_width(&max_label, number_font_size);
+
+                let baseline_adjust = number_font_size * 0.85;
+                let number_draw_x = cx_label - max_label_w * 0.5;
+                let number_draw_y = cy_label - baseline_adjust + number_font_size * 0.5;
+                const UNIT_GAP: f32 = 6.0;
+                let unit_x = number_draw_x + max_label_w + UNIT_GAP;
+                let unit_y = number_draw_y;
+                text_ctx.draw(pixmap, suffix, unit_x, unit_y, number_font_size, fg);
             }
         }
     }
