@@ -1,14 +1,26 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
+  import { get } from "svelte/store";
   import { open } from "@tauri-apps/plugin-dialog";
+  import type { UnlistenFn } from "@tauri-apps/api/event";
   import PreviewPane from "./components/PreviewPane.svelte";
   import Seekbar from "./components/Seekbar.svelte";
   import Sidebar from "./components/Sidebar.svelte";
   import ExportFooter from "./components/ExportFooter.svelte";
   import StartupBanner from "./components/StartupBanner.svelte";
-  import { sessionLoad, probeFfmpeg, probeCli } from "./lib/tauri";
-  import { session } from "./lib/stores";
+  import {
+    sessionLoad,
+    probeFfmpeg,
+    probeCli,
+    onLayoutReloaded,
+    onLayoutError,
+  } from "./lib/tauri";
+  import { requestPreview } from "./lib/preview-dispatcher";
+  import { session, previewT } from "./lib/stores";
   import { ffmpegMissing, cliMissing } from "./lib/runtime-stores";
+
+  let layoutError: string | null = null;
+  const unlistens: UnlistenFn[] = [];
 
   onMount(async () => {
     let s;
@@ -26,6 +38,24 @@
     probeCli(s.cli_path_override ?? undefined)
       .then(() => cliMissing.set(false))
       .catch(() => cliMissing.set(true));
+
+    const u1 = await onLayoutReloaded(async () => {
+      layoutError = null;
+      const t = get(previewT);
+      try {
+        await requestPreview(t);
+      } catch (e) {
+        console.error("preview after layout-reloaded failed:", e);
+      }
+    });
+    const u2 = await onLayoutError((msg) => {
+      layoutError = msg;
+    });
+    unlistens.push(u1, u2);
+  });
+
+  onDestroy(() => {
+    unlistens.forEach((u) => u());
   });
 
   async function setCliPath() {
@@ -53,6 +83,11 @@
   {/if}
   {#if $cliMissing}
     <StartupBanner kind="cli" onSetPath={setCliPath} />
+  {/if}
+  {#if layoutError}
+    <div class="layout-error" role="alert">
+      <span>Layout parse error: {layoutError}</span>
+    </div>
   {/if}
 
   <div class="app">
@@ -91,4 +126,10 @@
   }
   :global(.sidebar) { grid-area: sidebar; overflow-y: auto; }
   :global(.footer)  { grid-area: footer; }
+  .layout-error {
+    background: #844;
+    color: #ffeeee;
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+  }
 </style>
