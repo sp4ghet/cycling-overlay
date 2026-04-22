@@ -102,6 +102,11 @@ pub struct RenderArgs {
     /// Parse + validate only; don't render.
     #[arg(long)]
     pub dry_run: bool,
+
+    /// Emit one JSON line per progress event to stderr instead of a
+    /// drawn progress bar. Used by the GUI to stream progress.
+    #[arg(long, default_value_t = false)]
+    pub progress_json: bool,
 }
 
 /// Parse time specs like:

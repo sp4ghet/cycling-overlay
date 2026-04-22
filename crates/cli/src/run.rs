@@ -14,6 +14,33 @@ use crate::args::RenderArgs;
 use crate::ffmpeg::{EncodeOpts, FfmpegWriter};
 use crate::pipeline::{FrameScheduler, ReorderBuffer};
 
+/// Progress sink. `Bar` draws an indicatif bar; `Json` emits one JSON
+/// line per event to stderr (consumed by the GUI's export pipeline).
+enum Progress {
+    Bar(ProgressBar),
+    Json { total: u64 },
+}
+
+impl Progress {
+    fn inc(&self, frame: u64) {
+        match self {
+            Progress::Bar(pb) => pb.inc(1),
+            Progress::Json { total } => {
+                eprintln!(
+                    r#"{{"type":"progress","frame":{},"total":{}}}"#,
+                    frame, total
+                );
+            }
+        }
+    }
+    fn finish(&self) {
+        match self {
+            Progress::Bar(pb) => pb.finish_and_clear(),
+            Progress::Json { .. } => eprintln!(r#"{{"type":"done"}}"#),
+        }
+    }
+}
+
 /// Parse a hex color `#rrggbb` into an opaque `tiny_skia::Color`. Used for
 /// chromakey fills. Alpha shorthand (`#rrggbbaa`) is not accepted here — the
 /// chromakey must be opaque.
@@ -183,11 +210,17 @@ pub fn render(args: &RenderArgs) -> Result<()> {
         return Err(anyhow!("nothing to render: time range is empty"));
     }
 
-    // Progress bar.
-    let pb = ProgressBar::new(total);
-    pb.set_style(
-        ProgressStyle::with_template("{bar:40.cyan/blue} {pos}/{len} frames | ETA {eta}").unwrap(),
-    );
+    // Progress sink: indicatif bar by default, or JSON lines for the GUI.
+    let progress = if args.progress_json {
+        Progress::Json { total }
+    } else {
+        let pb = ProgressBar::new(total);
+        pb.set_style(
+            ProgressStyle::with_template("{bar:40.cyan/blue} {pos}/{len} frames | ETA {eta}")
+                .unwrap(),
+        );
+        Progress::Bar(pb)
+    };
 
     // Bounded channel; capacity equals reorder-buffer cap so back-pressure
     // aligns with the buffer. 128 × 8.3 MB ≈ 1 GB peak at 1080p RGBA.
@@ -210,17 +243,21 @@ pub fn render(args: &RenderArgs) -> Result<()> {
         qscale: args.qscale,
         crf: args.crf,
     };
-    let pb_flush = pb.clone();
+    // Progress is moved into the flusher closure; nothing else reads it.
+    // A local counter tracks the absolute frame number so the JSON sink can
+    // report `frame=N` instead of a "+1" increment.
     let flusher = thread::spawn(move || -> anyhow::Result<()> {
         let mut writer = FfmpegWriter::new(w, h, fps, encode_opts, &out_path)?;
         let mut buf = ReorderBuffer::new(BUFFER_CAP);
+        let mut done: u64 = 0;
         while let Ok((idx, bytes)) = rx.recv() {
             buf.push(idx, bytes);
             for ready in buf.drain_ready() {
                 writer
                     .write_frame(&ready)
                     .map_err(|e| anyhow!("ffmpeg write_frame failed: {}", e))?;
-                pb_flush.inc(1);
+                done += 1;
+                progress.inc(done);
             }
         }
         // Channel closed — drain anything left (shouldn't have gaps if
@@ -229,8 +266,10 @@ pub fn render(args: &RenderArgs) -> Result<()> {
             writer
                 .write_frame(&ready)
                 .map_err(|e| anyhow!("ffmpeg write_frame failed: {}", e))?;
-            pb_flush.inc(1);
+            done += 1;
+            progress.inc(done);
         }
+        progress.finish();
         writer.finish()
     });
 
@@ -284,11 +323,11 @@ pub fn render(args: &RenderArgs) -> Result<()> {
     drop(tx);
 
     // Join the flusher regardless of render_result so we don't leak the thread.
+    // The flusher is responsible for calling `progress.finish()` internally,
+    // since it owns the `Progress` sink.
     let flush_result = flusher
         .join()
         .map_err(|_| anyhow!("flusher thread panicked"))?;
-
-    pb.finish();
 
     // Propagate errors. Prefer the render error since it's the upstream cause.
     render_result?;
