@@ -118,7 +118,6 @@ pub fn render_meter(
         // readable minimum. A 40-high horizontal canvas with thickness=20
         // lands at 12.0, which reads cleanly.
         let number_font_size = (thickness * 0.5).max(12.0);
-        let unit_s = unit_suffix(metric, units);
 
         for v in tick_values(min, max, major_every) {
             let tf = frac(v, min, max);
@@ -148,7 +147,6 @@ pub fn render_meter(
                     major_len,
                     number_font_size,
                     &label,
-                    unit_s,
                     fg,
                 );
             }
@@ -252,7 +250,6 @@ fn draw_tick_number(
     tick_len: f32,
     font_size: f32,
     label: &str,
-    _unit: &str,
     color: Color,
 ) {
     const GAP: f32 = 4.0;
@@ -318,6 +315,11 @@ pub(crate) fn pull_value(m: Metric, s: &Sample, units: &Units) -> Option<f32> {
 
 /// Return the short unit suffix for a metric (e.g. `"km/h"`, `"m"`, `"%"`).
 /// Mirrors `pull_value`'s unit conversion so the two stay in lockstep.
+///
+/// Not called from render code yet (tick numbers dropped the unit suffix);
+/// retained for Task 6 (`show_value`) / Task 7 (shared-formatter refactor)
+/// and exercised by the unit tests below.
+#[allow(dead_code)]
 pub(crate) fn unit_suffix(m: Metric, units: &Units) -> &'static str {
     match m {
         Metric::Speed => match units.speed {
