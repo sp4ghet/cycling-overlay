@@ -115,6 +115,12 @@ pub fn render_frame(
                     t,
                 );
             }
+            Widget::Meter { .. } => {
+                // Implemented in Task 4.
+            }
+            Widget::Gauge { .. } => {
+                // Implemented in Task 6.
+            }
         }
     }
 

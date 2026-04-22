@@ -117,6 +117,14 @@ fn default_show_numbers() -> bool {
     true
 }
 
+fn default_gauge_start_deg() -> f32 {
+    -135.0
+}
+
+fn default_gauge_end_deg() -> f32 {
+    135.0
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Ticks {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -188,6 +196,42 @@ pub enum Widget {
         #[serde(default)]
         decimals: u32,
     },
+    Meter {
+        id: String,
+        metric: String,
+        rect: Rect,
+        min: f32,
+        max: f32,
+        #[serde(default)]
+        orientation: Orientation,
+        #[serde(default)]
+        indicator: Indicator,
+        #[serde(default)]
+        ticks: Ticks,
+        #[serde(default)]
+        show_value: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        value_font_size: Option<f32>,
+    },
+    Gauge {
+        id: String,
+        metric: String,
+        rect: Rect,
+        min: f32,
+        max: f32,
+        #[serde(default = "default_gauge_start_deg")]
+        start_deg: f32,
+        #[serde(default = "default_gauge_end_deg")]
+        end_deg: f32,
+        #[serde(default)]
+        indicator: Indicator,
+        #[serde(default)]
+        ticks: Ticks,
+        #[serde(default)]
+        show_value: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        value_font_size: Option<f32>,
+    },
 }
 
 impl Widget {
@@ -196,7 +240,9 @@ impl Widget {
             Widget::Readout { id, .. }
             | Widget::Course { id, .. }
             | Widget::ElevationProfile { id, .. }
-            | Widget::Bar { id, .. } => id,
+            | Widget::Bar { id, .. }
+            | Widget::Meter { id, .. }
+            | Widget::Gauge { id, .. } => id,
         }
     }
 
@@ -205,7 +251,9 @@ impl Widget {
             Widget::Readout { rect, .. }
             | Widget::Course { rect, .. }
             | Widget::ElevationProfile { rect, .. }
-            | Widget::Bar { rect, .. } => *rect,
+            | Widget::Bar { rect, .. }
+            | Widget::Meter { rect, .. }
+            | Widget::Gauge { rect, .. } => *rect,
         }
     }
 }
@@ -312,5 +360,47 @@ mod tests {
         assert_eq!(t.minor_every, None);
         assert!(t.show_numbers);
         assert_eq!(t.decimals, 0);
+    }
+
+    #[test]
+    fn meter_round_trip() {
+        let json = r#"{
+            "type": "meter",
+            "id": "spd",
+            "metric": "speed",
+            "rect": { "x": 0, "y": 0, "w": 100, "h": 20 },
+            "min": 0.0,
+            "max": 60.0
+        }"#;
+        let w: Widget = serde_json::from_str(json).unwrap();
+        match w {
+            Widget::Meter { metric, min, max, orientation, .. } => {
+                assert_eq!(metric, "speed");
+                assert_eq!(min, 0.0);
+                assert_eq!(max, 60.0);
+                assert_eq!(orientation, Orientation::Horizontal); // default
+            }
+            _ => panic!("expected Meter"),
+        }
+    }
+
+    #[test]
+    fn gauge_defaults_to_classic_sweep() {
+        let json = r#"{
+            "type": "gauge",
+            "id": "spd_g",
+            "metric": "speed",
+            "rect": { "x": 0, "y": 0, "w": 200, "h": 200 },
+            "min": 0.0,
+            "max": 60.0
+        }"#;
+        let w: Widget = serde_json::from_str(json).unwrap();
+        match w {
+            Widget::Gauge { start_deg, end_deg, .. } => {
+                assert_eq!(start_deg, -135.0);
+                assert_eq!(end_deg, 135.0);
+            }
+            _ => panic!("expected Gauge"),
+        }
     }
 }
