@@ -150,6 +150,7 @@ pub fn render_gauge(
 /// convention: 0° up, CW+) at the given center and radius. Approximates the
 /// arc with a polyline — roughly 2° per segment is smooth at overlay
 /// resolutions (~180 segments per full 360° sweep).
+#[allow(clippy::too_many_arguments)]
 fn draw_arc_stroke(
     pixmap: &mut Pixmap,
     cx: f32,
