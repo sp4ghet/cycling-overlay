@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "gpx-overlay",
+  "productName": "cycling-overlay",
   "version": "0.1.0",
-  "identifier": "com.gpx-overlay.app",
+  "identifier": "com.cycling-overlay.app",
   "build": {
     "frontendDist": "../build",
     "devUrl": "http://localhost:5173",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "gpx-overlay",
+        "title": "cycling-overlay",
         "width": 1280,
         "height": 800,
         "minWidth": 960,

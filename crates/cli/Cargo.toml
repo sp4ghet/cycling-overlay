@@ -1,10 +1,10 @@
 [package]
-name = "gpx-overlay"
+name = "cycling-overlay"
 version.workspace = true
 edition.workspace = true
 
 [[bin]]
-name = "gpx-overlay"
+name = "cycling-overlay"
 path = "src/main.rs"
 
 [dependencies]

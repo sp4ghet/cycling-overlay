@@ -1,4 +1,4 @@
-# gpx-overlay
+# cycling-overlay
 
 Render ride/run telemetry — speed, HR, power, cadence, distance, elevation, course map, gradient, W/kg, time — as a video overlay you can drop onto your action-cam footage in any editor. Takes a GPX or FIT activity file plus a JSON layout, outputs a transparent-background MOV (ProRes 4444) or a chromakey-fill MP4 (H.264 / HEVC).
 
@@ -43,7 +43,7 @@ cargo build --release
 Render:
 
 ```sh
-./target/release/gpx-overlay render \
+./target/release/cycling-overlay render \
     --input examples/short.gpx \
     --layout examples/layout.json \
     --output out.mov
@@ -80,7 +80,7 @@ For the chromakey codecs the overlay renders on a solid fill color (default mage
 | `--progress-json` | Emit one JSON line per frame to stderr (used by the GUI). |
 | `--dry-run` | Parse and validate, don't render. |
 
-Full help: `gpx-overlay render --help`.
+Full help: `cycling-overlay render --help`.
 
 ## Layouts
 
@@ -114,7 +114,7 @@ crates/
     activity/      # GPX + FIT parsing, sampling, derived metrics
     layout/        # Layout schema + validation
     render/        # Frame compositing (tiny-skia + cosmic-text), widgets
-    cli/           # The gpx-overlay binary
+    cli/           # The cycling-overlay binary
 gui/
     src/           # Svelte + TypeScript frontend
     src-tauri/     # Tauri 2 Rust backend

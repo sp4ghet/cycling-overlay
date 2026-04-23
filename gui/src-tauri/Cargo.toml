@@ -1,8 +1,8 @@
 [package]
-name = "gpx-overlay-gui"
+name = "cycling-overlay-gui"
 version = "0.1.0"
 edition = "2021"
-description = "Desktop GUI for gpx-overlay"
+description = "Desktop GUI for cycling-overlay"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

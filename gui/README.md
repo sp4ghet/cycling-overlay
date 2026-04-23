@@ -1,6 +1,6 @@
-# gpx-overlay GUI
+# cycling-overlay GUI
 
-Desktop wrapper (Tauri 2 + Svelte + TypeScript) around the `gpx-overlay` CLI.
+Desktop wrapper (Tauri 2 + Svelte + TypeScript) around the `cycling-overlay` CLI.
 
 ## Development
 
@@ -50,7 +50,7 @@ Run before releasing:
 6. **Cancel mid-export** — click Cancel; UI returns to idle within ~1s; partial output file remains on disk.
 7. **Kill ffmpeg externally during export** — open Task Manager / `pkill ffmpeg`; error event appears in the log pane with the CLI's non-zero exit.
 8. **Missing ffmpeg on launch** — rename `ffmpeg` off `PATH`, launch; red banner visible; Export button disabled.
-9. **Session persistence** — set all fields, close the app, reopen; fields repopulate. Session file lives in the OS app-config dir (`%APPDATA%\com.gpx-overlay.app\session.json` on Windows).
+9. **Session persistence** — set all fields, close the app, reopen; fields repopulate. Session file lives in the OS app-config dir (`%APPDATA%\com.cycling-overlay.app\session.json` on Windows).
 
 ## Architecture
 

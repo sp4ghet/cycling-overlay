@@ -30,7 +30,7 @@ fn dry_run_on_short_gpx_succeeds() {
     std::fs::write(&layout_path, layout_json).unwrap();
     let output_path = tmp.path().join("out.mov");
 
-    Command::cargo_bin("gpx-overlay")
+    Command::cargo_bin("cycling-overlay")
         .unwrap()
         .args([
             "render",
@@ -54,7 +54,7 @@ fn dry_run_fails_on_missing_input() {
     let tmp = tempfile::TempDir::new().unwrap();
     let output_path = tmp.path().join("out.mov");
 
-    Command::cargo_bin("gpx-overlay")
+    Command::cargo_bin("cycling-overlay")
         .unwrap()
         .args([
             "render",

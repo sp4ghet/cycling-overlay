@@ -19,7 +19,7 @@ fn emits_json_progress_and_done_lines() {
     let tmp = tempfile::TempDir::new().unwrap();
     let out = tmp.path().join("overlay.mov");
 
-    let assert = Command::cargo_bin("gpx-overlay")
+    let assert = Command::cargo_bin("cycling-overlay")
         .unwrap()
         .args([
             "render",

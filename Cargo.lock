@@ -704,6 +704,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "cycling-overlay"
+version = "0.1.0"
+dependencies = [
+ "activity",
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "indicatif",
+ "layout",
+ "num_cpus",
+ "predicates",
+ "rayon",
+ "render",
+ "serde_json",
+ "tempfile",
+ "tiny-skia",
+]
+
+[[package]]
+name = "cycling-overlay-gui"
+version = "0.1.0"
+dependencies = [
+ "activity",
+ "anyhow",
+ "base64 0.22.1",
+ "layout",
+ "libc",
+ "notify",
+ "render",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tiny-skia",
+ "tokio",
+ "which",
+]
+
+[[package]]
 name = "darling"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1504,48 +1546,6 @@ dependencies = [
  "thiserror 1.0.69",
  "time",
  "xml-rs",
-]
-
-[[package]]
-name = "gpx-overlay"
-version = "0.1.0"
-dependencies = [
- "activity",
- "anyhow",
- "assert_cmd",
- "clap",
- "indicatif",
- "layout",
- "num_cpus",
- "predicates",
- "rayon",
- "render",
- "serde_json",
- "tempfile",
- "tiny-skia",
-]
-
-[[package]]
-name = "gpx-overlay-gui"
-version = "0.1.0"
-dependencies = [
- "activity",
- "anyhow",
- "base64 0.22.1",
- "layout",
- "libc",
- "notify",
- "render",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tempfile",
- "thiserror 1.0.69",
- "tiny-skia",
- "tokio",
- "which",
 ]
 
 [[package]]

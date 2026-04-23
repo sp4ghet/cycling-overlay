@@ -52,9 +52,9 @@ pub fn probe_ffmpeg(override_path: Option<PathBuf>) -> Result<PathBuf, String> {
 pub fn probe_cli(override_path: Option<PathBuf>) -> Result<PathBuf, String> {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
     let binary_name = if cfg!(windows) {
-        "gpx-overlay.exe"
+        "cycling-overlay.exe"
     } else {
-        "gpx-overlay"
+        "cycling-overlay"
     };
     resolve(override_path.as_deref(), &exe, binary_name)
         .ok_or_else(|| format!("{} not found", binary_name))
@@ -70,9 +70,9 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let exe = dir.path().join("gui.exe");
         File::create(&exe).unwrap();
-        let sib = dir.path().join("gpx-overlay.exe");
+        let sib = dir.path().join("cycling-overlay.exe");
         File::create(&sib).unwrap();
-        assert_eq!(sibling_of(&exe, "gpx-overlay.exe").unwrap(), sib);
+        assert_eq!(sibling_of(&exe, "cycling-overlay.exe").unwrap(), sib);
     }
 
     #[test]
@@ -90,10 +90,10 @@ mod tests {
         File::create(&override_path).unwrap();
         let exe = dir.path().join("gui.exe");
         File::create(&exe).unwrap();
-        let sib = dir.path().join("gpx-overlay.exe");
+        let sib = dir.path().join("cycling-overlay.exe");
         File::create(&sib).unwrap();
         assert_eq!(
-            resolve(Some(&override_path), &exe, "gpx-overlay.exe").unwrap(),
+            resolve(Some(&override_path), &exe, "cycling-overlay.exe").unwrap(),
             override_path
         );
     }

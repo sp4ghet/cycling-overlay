@@ -23,7 +23,7 @@ fn render_short_gpx_produces_valid_mov() {
     // NOTE: cannot use --size 640x360 here because the layout's rects are
     // sized for 1920x1080 and the CLI `--size` override applies before
     // validation, so they'd overflow. Render at the layout's native size.
-    Command::cargo_bin("gpx-overlay")
+    Command::cargo_bin("cycling-overlay")
         .unwrap()
         .args([
             "render",

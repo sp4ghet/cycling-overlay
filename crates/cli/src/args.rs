@@ -31,7 +31,7 @@ impl Codec {
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "gpx-overlay",
+    name = "cycling-overlay",
     version,
     about = "Render a transparent video overlay from GPX or FIT data"
 )]
