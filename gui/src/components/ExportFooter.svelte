@@ -34,6 +34,12 @@
       if (p.message) {
         exportLog.update((l) => [...l, `[export-done ${p.status}] ${p.message}`]);
       }
+      // Auto-expand the log on non-success so the user sees the CLI's
+      // stderr (which contains the actual ffmpeg/render failure). Without
+      // this the error is invisible behind a collapsed pane.
+      if (p.status !== "success") {
+        collapsed = false;
+      }
     }).then((u) => unlistens.push(u));
 
     return () => unlistens.forEach((u) => u());
@@ -57,6 +63,13 @@
         <div class="fill" style="width: {pct}%"></div>
       </div>
       <div class="stats">
+        {#if $exportStatus === "error"}
+          <span class="status err">failed</span>
+        {:else if $exportStatus === "canceled"}
+          <span class="status cancel">canceled</span>
+        {:else if $exportStatus === "success"}
+          <span class="status ok">done</span>
+        {/if}
         {#if $exportProgress}
           {$exportProgress.frame} / {$exportProgress.total}
           · {$exportProgress.fps.toFixed(1)} fps
@@ -112,7 +125,21 @@
     color: #bbb;
     min-width: 20ch;
     text-align: right;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: flex-end;
   }
+  .status {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+  }
+  .status.err    { background: #a33; color: white; }
+  .status.cancel { background: #862; color: white; }
+  .status.ok     { background: #263; color: white; }
   .cancel {
     background: #a33; color: white; border: 0;
     padding: 0.3rem 0.8rem; cursor: pointer;
