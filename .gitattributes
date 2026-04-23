@@ -1,0 +1,17 @@
+# Default: normalize on commit, use OS-native on checkout.
+* text=auto
+
+# Force LF on anything bash has to execute. Without this, autocrlf on
+# Windows flips the shebang line to `bash\r` and the pre-commit hook
+# dies with `/usr/bin/env: 'bash\r': No such file or directory`.
+.githooks/* text eol=lf
+*.sh         text eol=lf
+
+# Binary assets — don't touch.
+*.fit   binary
+*.ttf   binary
+*.mov   binary
+*.mp4   binary
+*.png   binary
+*.ico   binary
+*.icns  binary
