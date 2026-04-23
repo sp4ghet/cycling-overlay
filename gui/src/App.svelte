@@ -188,13 +188,13 @@
     grid-area: footer;
   }
   .layout-error {
-    background: #844;
-    color: #ffeeee;
+    background: var(--status-error-bg);
+    color: var(--status-error-text);
     padding: 0.4rem 1rem;
     font-size: 0.85rem;
   }
   .load-error {
-    background: #a33;
+    background: var(--danger);
     color: white;
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
@@ -213,6 +213,6 @@
     padding: 0 0.3rem;
   }
   .load-error .dismiss:hover {
-    color: #eee;
+    color: var(--text);
   }
 </style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Slider } from "bits-ui";
   import { activityInfo, previewT } from "../lib/stores";
   import { requestPreview } from "../lib/preview-dispatcher";
 
@@ -17,8 +18,8 @@
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   }
 
-  function onInput(e: Event) {
-    const v = Number((e.target as HTMLInputElement).value);
+  function onValueChange(vals: number[]) {
+    const v = vals[0];
     previewT.set(v);
     if (!dragging) return;
     const now = performance.now();
@@ -39,20 +40,23 @@
   }
 </script>
 
-<section class="seekbar">
-  <input
-    type="range"
-    min="0"
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<section class="seekbar" on:pointerdown={onDown} on:pointerup={onUp}>
+  <Slider.Root
+    min={0}
     max={duration}
-    step="0.1"
-    value={$previewT}
-    on:input={onInput}
-    on:mousedown={onDown}
-    on:mouseup={onUp}
-    on:touchstart={onDown}
-    on:touchend={onUp}
+    step={0.1}
+    value={[$previewT]}
     disabled={!$activityInfo}
-  />
+    {onValueChange}
+    class="slider"
+    let:thumbs
+  >
+    <Slider.Range class="range" />
+    {#each thumbs as thumb}
+      <Slider.Thumb {thumb} class="thumb" />
+    {/each}
+  </Slider.Root>
   <div class="labels">
     <span>{fmt($previewT)}</span>
     <span>{fmt(duration)}</span>
@@ -62,16 +66,59 @@
 <style>
   .seekbar {
     padding: 0.5rem 1rem;
-    background: #1a1a1a;
+    background: var(--bg-raised);
   }
-  .seekbar input {
+  :global(.slider) {
+    position: relative;
+    display: flex;
+    align-items: center;
     width: 100%;
+    height: 20px;
+    cursor: pointer;
+  }
+  :global(.slider[data-disabled]) {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  :global(.slider)::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--bg-control);
+    border-radius: 2px;
+  }
+  :global(.range) {
+    position: absolute;
+    height: 4px;
+    background: var(--accent-teal);
+    border-radius: 2px;
+    left: 0;
+  }
+  :global(.thumb) {
+    display: block;
+    width: 14px;
+    height: 14px;
+    background: var(--text);
+    border: 2px solid var(--accent-teal);
+    border-radius: 50%;
+    position: absolute;
+    transform: translateX(-50%);
+    cursor: grab;
+  }
+  :global(.thumb:focus) {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(68, 170, 204, 0.4);
+  }
+  :global(.thumb:active) {
+    cursor: grabbing;
   }
   .labels {
     display: flex;
     justify-content: space-between;
     font-size: 0.85rem;
-    color: #aaa;
+    color: var(--text-dim);
     margin-top: 0.25rem;
   }
 </style>

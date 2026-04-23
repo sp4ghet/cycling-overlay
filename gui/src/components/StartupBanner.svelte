@@ -12,7 +12,7 @@
 
 <style>
   .banner {
-    background: #a33;
+    background: var(--danger);
     color: white;
     padding: 0.5rem 1rem;
     display: flex;
@@ -22,13 +22,14 @@
   }
   button {
     background: white;
-    color: #a33;
+    color: var(--danger);
     border: 0;
     padding: 0.25rem 0.7rem;
     cursor: pointer;
     font-weight: 600;
+    font-family: inherit;
   }
   button:hover {
-    background: #eee;
+    background: var(--text);
   }
 </style>

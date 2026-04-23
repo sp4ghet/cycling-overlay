@@ -7,3 +7,6 @@ gui/build/*
 # Developer-local fixtures and wrapper scripts: do not track.
 examples/ride.fit
 run.ps1
+
+# Ignore environment variable files, which may contain secrets.
+.env

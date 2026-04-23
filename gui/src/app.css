@@ -1,11 +1,54 @@
+@import "@fontsource-variable/inter";
+
+:root {
+  /* Backgrounds */
+  --bg-base: #111;
+  --bg-raised: #1a1a1a;
+  --bg-overlay: #222;
+  --bg-muted: #2a2a2a;
+  --bg-control: #333;
+  --bg-control-hover: #3a3a3a;
+
+  /* Borders */
+  --border-subtle: #333;
+  --border: #444;
+
+  /* Text */
+  --text: #eee;
+  --text-muted: #bbb;
+  --text-dim: #aaa;
+  --text-faint: #888;
+  --text-disabled: #666;
+
+  /* Accent — green */
+  --accent: #4a6;
+  --accent-hover: #5b7;
+  --accent-dim: #6ac;
+  --accent-teal: #4ac;
+  --accent-selection: #1e3a2a;
+
+  /* Danger — red */
+  --danger: #a33;
+  --danger-hover: #b44;
+
+  /* Status */
+  --status-ok: #263;
+  --status-cancel: #862;
+  --status-error-bg: #844;
+  --status-error-text: #ffeeee;
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: #111;
-  color: #eee;
+  background: var(--bg-base);
+  color: var(--text);
+  font-family: "Inter Variable", Inter, system-ui, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
+
 * {
   box-sizing: border-box;
 }

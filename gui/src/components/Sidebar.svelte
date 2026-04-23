@@ -172,41 +172,82 @@
       console.error("start_export failed:", e);
     }
   }
+
+  function basename(p: string) {
+    return p.split(/[/\\]/).pop() ?? p;
+  }
 </script>
 
 <aside class="sidebar">
-  <div class="row">
-    <label>Input</label>
-    <button on:click={pickInput}>Browse…</button>
-    <div class="path">{$session.input_path ?? "—"}</div>
-    {#if $activityInfo}
-      <div class="meta">
-        {Math.round($activityInfo.duration_seconds)}s · {$activityInfo.sample_count} samples
+  <section class="section">
+    <div class="section-header">
+      <span class="section-label">Files</span>
+    </div>
+
+    <div class="file-row">
+      <div class="file-info">
+        <span class="file-field-label">Activity</span>
+        {#if $session.input_path}
+          <span class="file-name">{basename($session.input_path)}</span>
+          {#if $activityInfo}
+            <span class="meta"
+              >{Math.round($activityInfo.duration_seconds)}s · {$activityInfo.sample_count} samples</span
+            >
+          {/if}
+        {:else}
+          <span class="file-empty">No file selected</span>
+        {/if}
       </div>
-    {/if}
-  </div>
+      <button on:click={pickInput}>Browse…</button>
+    </div>
 
-  <div class="row">
-    <label>Layout</label>
-    <button on:click={pickLayout}>Browse…</button>
-    <div class="path">{$session.layout_path ?? "—"}</div>
-    {#if $layoutInfo}
-      <div class="meta">
-        {$layoutInfo.width}×{$layoutInfo.height} @ {$layoutInfo.fps}fps · {$layoutInfo.widget_count} widgets
+    <div class="file-row">
+      <div class="file-info">
+        <span class="file-field-label">Layout</span>
+        {#if $session.layout_path}
+          <span class="file-name">{basename($session.layout_path)}</span>
+          {#if $layoutInfo}
+            <span class="meta"
+              >{$layoutInfo.width}×{$layoutInfo.height} @ {$layoutInfo.fps}fps · {$layoutInfo.widget_count}
+              widgets</span
+            >
+          {/if}
+        {:else}
+          <span class="file-empty">No file selected</span>
+        {/if}
       </div>
-    {/if}
-  </div>
+      <button on:click={pickLayout}>Browse…</button>
+    </div>
 
-  <div class="row">
-    <label>Output</label>
-    <button on:click={pickOutput}>Browse…</button>
-    <div class="path">{$session.output_path ?? "—"}</div>
-  </div>
+    <div class="file-row">
+      <div class="file-info">
+        <span class="file-field-label">Output</span>
+        {#if $session.output_path}
+          <span class="file-name">{basename($session.output_path)}</span>
+        {:else}
+          <span class="file-empty">No file selected</span>
+        {/if}
+      </div>
+      <button on:click={pickOutput}>Browse…</button>
+    </div>
+  </section>
 
-  <CodecSelect />
+  <div class="divider" />
 
-  <div class="row">
-    <label>Time range (HH:MM:SS)</label>
+  <section class="section">
+    <div class="section-header">
+      <span class="section-label">Encoding</span>
+    </div>
+    <CodecSelect />
+  </section>
+
+  <div class="divider" />
+
+  <section class="section">
+    <div class="section-header">
+      <span class="section-label">Time range</span>
+      <span class="section-hint">HH:MM:SS</span>
+    </div>
     <div class="time-row">
       <input
         bind:this={fromInput}
@@ -228,7 +269,9 @@
         placeholder="00:00:00"
       />
     </div>
-  </div>
+  </section>
+
+  <div class="spacer" />
 
   <button
     class="primary"
@@ -248,74 +291,147 @@
 <style>
   .sidebar {
     padding: 1rem;
-    background: #222;
+    background: var(--bg-overlay);
     height: 100%;
-  }
-  .row {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    margin-bottom: 1.25rem;
+    border-left: 1px solid var(--bg-muted);
   }
-  .row > label {
+
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.75rem 0;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-disabled);
+  }
+
+  .section-hint {
+    font-size: 0.72rem;
+    color: var(--text-disabled);
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--bg-muted);
+  }
+
+  .spacer {
+    flex: 1;
+  }
+
+  .file-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .file-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .file-field-label {
+    font-size: 0.82rem;
     font-weight: 600;
-    color: #ddd;
+    color: var(--text-muted);
   }
-  .path {
-    font-size: 0.85rem;
-    color: #888;
-    word-break: break-all;
+
+  .file-name {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+
+  .file-empty {
+    font-size: 0.8rem;
+    color: var(--text-disabled);
+    font-style: italic;
+  }
+
   .meta {
     font-size: 0.8rem;
-    color: #6ac;
+    color: var(--accent-dim);
   }
+
   button {
+    flex-shrink: 0;
     padding: 0.3rem 0.8rem;
-    background: #333;
-    color: #eee;
-    border: 1px solid #444;
+    background: var(--bg-control);
+    color: var(--text);
+    border: 1px solid var(--border);
     cursor: pointer;
     align-self: flex-start;
+    white-space: nowrap;
+    font-family: inherit;
   }
+
   button:hover {
-    background: #3a3a3a;
+    background: var(--bg-control-hover);
   }
+
   .time-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
+
   .time-row input {
     flex: 1;
     min-width: 0;
     padding: 0.3rem;
-    background: #333;
-    color: #eee;
-    border: 1px solid #444;
+    background: var(--bg-control);
+    color: var(--text);
+    border: 1px solid var(--border);
     font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
   }
+
   .time-row input.invalid {
-    border-color: #a33;
+    border-color: var(--danger);
   }
+
   .time-row span {
-    color: #888;
+    color: var(--text-faint);
   }
+
   .primary {
-    margin-top: 1rem;
+    width: 100%;
+    margin-top: 0.5rem;
     padding: 0.6rem 1rem;
-    background: #4a6;
+    background: var(--accent);
     color: white;
     border: 0;
     cursor: pointer;
     font-weight: 600;
+    font-family: inherit;
   }
+
   .primary:hover:not(:disabled) {
-    background: #5b7;
+    background: var(--accent-hover);
   }
+
   .primary:disabled {
-    background: #333;
-    color: #888;
+    background: var(--bg-control);
+    color: var(--text-disabled);
     cursor: not-allowed;
   }
 </style>
