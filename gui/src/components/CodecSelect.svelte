@@ -2,13 +2,13 @@
   import { session } from "../lib/stores";
 
   const CODECS = [
-    { id: "prores_4444", label: "prores",      desc: "transparent alpha (largest files)" },
+    { id: "prores4444",  label: "prores",      desc: "transparent alpha (largest files)" },
     { id: "h264_nvenc",  label: "h264_nvenc",  desc: "fast, NVIDIA GPU acceleration" },
     { id: "hevc_nvenc",  label: "hevc_nvenc",  desc: "smallest files, NVIDIA GPU acceleration" },
     { id: "h264",        label: "h264",        desc: "no NVIDIA GPU, small filesize (CPU encode)" },
   ];
 
-  $: isAlpha = $session.codec === "prores_4444";
+  $: isAlpha = $session.codec === "prores4444";
   $: qualityLabel = isAlpha ? "qscale (lower = larger)" : "CRF / CQ (lower = better)";
 </script>
 

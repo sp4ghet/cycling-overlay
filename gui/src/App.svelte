@@ -26,6 +26,12 @@
     let s;
     try {
       s = await sessionLoad();
+      // Migrate legacy codec IDs: an earlier build stored `prores_4444`,
+      // but clap actually accepts `prores4444`. Rewrite the field so the
+      // dropdown + argv stay consistent.
+      if (s.codec === "prores_4444") {
+        s = { ...s, codec: "prores4444" };
+      }
       session.set(s);
     } catch (e) {
       console.error("session_load failed:", e);

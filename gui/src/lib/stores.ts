@@ -11,7 +11,7 @@ const defaultSession: SessionState = {
   input_path: null,
   layout_path: null,
   output_path: null,
-  codec: "prores_4444",
+  codec: "prores4444",
   quality: 20,
   chromakey: "#00ff00",
   from_seconds: 0,

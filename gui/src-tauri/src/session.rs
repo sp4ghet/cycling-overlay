@@ -21,7 +21,7 @@ impl Default for SessionState {
             input_path: None,
             layout_path: None,
             output_path: None,
-            codec: "prores_4444".into(),
+            codec: "prores4444".into(),
             quality: 20,
             chromakey: "#00ff00".into(),
             from_seconds: 0.0,
@@ -89,7 +89,7 @@ mod tests {
 
     #[test]
     fn unknown_fields_ignored() {
-        let s = load_from_str(r#"{"codec":"prores_4444","future_field":42}"#);
+        let s = load_from_str(r#"{"codec":"prores4444","future_field":42}"#);
         assert!(s.is_ok());
     }
 }

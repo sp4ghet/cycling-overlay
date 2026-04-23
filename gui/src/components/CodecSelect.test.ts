@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import CodecSelect from "./CodecSelect.svelte";
 
 describe("CodecSelect", () => {
-  it("hides chromakey when codec is prores_4444 (default)", () => {
+  it("hides chromakey when codec is prores4444 (default)", () => {
     const { queryByLabelText } = render(CodecSelect);
     expect(queryByLabelText(/Chromakey/)).toBeNull();
   });
