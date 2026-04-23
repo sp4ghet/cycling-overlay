@@ -98,6 +98,21 @@ Iterate by keeping the GUI open with the layout loaded — the watcher auto-relo
 - **GPX without extensions** carries no HR / power / cadence — those widgets will show `--`.
 - **macOS distribution** is unsigned for v1; right-click → Open the first time you launch a packaged build.
 
+## Contributing
+
+Code style:
+
+- **Rust**: `cargo fmt --all`
+- **Frontend**: `cd gui && npm run format` (Prettier + `prettier-plugin-svelte`, config in `gui/.prettierrc.json`)
+
+Install the pre-commit hook once per clone so the formatters run automatically on staged files before each commit:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+The hook lives in [`.githooks/pre-commit`](.githooks/pre-commit) and is idempotent — missing toolchain (no `gui/node_modules`, no `rustfmt`) warns and continues rather than blocking the commit.
+
 ## License
 
 This project is released under the [MIT License](LICENSE.md).

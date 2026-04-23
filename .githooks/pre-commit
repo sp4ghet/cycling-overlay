@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Pre-commit: run Prettier (frontend) and rustfmt (Rust) on staged files
+# in place, then re-stage them so the commit captures the formatted
+# output. Missing toolchain (no gui/node_modules or no rustfmt) is
+# warned-on but not fatal — the commit still proceeds.
+#
+# Caveat: if a file has BOTH staged and unstaged changes, the formatter
+# touches the whole working-tree copy. The re-stage will sweep the
+# unstaged portion into the commit. Avoid partial stages on files that
+# still need more editing.
+#
+# Install once per clone:
+#     git config core.hooksPath .githooks
+
+set -e
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$STAGED" ] && exit 0
+
+# Only look at files Prettier / rustfmt actually handle.
+FRONTEND=$(echo "$STAGED" | grep -E '^gui/.*\.(ts|svelte|js|mjs|cjs|json|css|html)$' || true)
+RUST=$(echo "$STAGED" | grep -E '\.rs$' || true)
+
+if [ -n "$FRONTEND" ]; then
+    if [ -d gui/node_modules ]; then
+        # Run Prettier from gui/ with relative paths so .prettierignore +
+        # .prettierrc.json resolve correctly.
+        echo "$FRONTEND" | sed 's|^gui/||' \
+            | (cd gui && xargs -r npx --no-install prettier --write)
+        echo "$FRONTEND" | xargs -r git add
+    else
+        echo "⚠  pre-commit: gui/node_modules missing — run 'cd gui && npm install' to enable Prettier. Skipping frontend format." >&2
+    fi
+fi
+
+if [ -n "$RUST" ]; then
+    if command -v rustfmt >/dev/null 2>&1; then
+        # Format each staged .rs file directly. --edition matches the
+        # workspace's rust-version pin (2021).
+        echo "$RUST" | xargs -r rustfmt --edition 2021
+        echo "$RUST" | xargs -r git add
+    else
+        echo "⚠  pre-commit: rustfmt not found — install Rust toolchain to enable Rust formatting. Skipping." >&2
+    fi
+fi
+
+exit 0
