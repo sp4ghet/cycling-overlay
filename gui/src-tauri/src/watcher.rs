@@ -1,7 +1,8 @@
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::PathBuf;
-use std::sync::{mpsc::channel, Mutex};
-use std::time::{Duration, Instant};
+use std::sync::mpsc::{channel, RecvTimeoutError};
+use std::sync::Mutex;
+use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::state::AppState;
@@ -37,19 +38,30 @@ pub fn watch_layout(
     let app_clone = app.clone();
     let path_clone = path.clone();
     std::thread::spawn(move || {
-        let mut last_fire: Option<Instant> = None;
-        while let Ok(res) = rx.recv() {
-            let Ok(ev) = res else { continue };
-            if !matches!(ev.kind, EventKind::Modify(_) | EventKind::Create(_)) {
+        // Reset-timer debounce: block on the first event, then drain any
+        // further events until the channel goes quiet for DEBOUNCE. This
+        // reliably coalesces editor rename-replace bursts (the first event
+        // can fire on the old inode; we wait out the window and read the
+        // final file state) — the previous "fire then ignore for 150ms"
+        // strategy dropped everything after event 1 of the burst.
+        loop {
+            // Wait for the first interesting event.
+            let first = match rx.recv() {
+                Ok(Ok(ev)) => ev,
+                Ok(Err(_)) => continue, // notify internal error, ignore
+                Err(_) => return,        // channel closed (watcher dropped)
+            };
+            if !matches!(first.kind, EventKind::Modify(_) | EventKind::Create(_)) {
                 continue;
             }
-            if let Some(t) = last_fire {
-                if t.elapsed() < DEBOUNCE {
-                    continue;
+            // Quiet-period drain: each event restarts the timeout.
+            loop {
+                match rx.recv_timeout(DEBOUNCE) {
+                    Ok(_) => continue, // more activity — reset timer
+                    Err(RecvTimeoutError::Timeout) => break, // quiet — reload
+                    Err(RecvTimeoutError::Disconnected) => return,
                 }
             }
-            last_fire = Some(Instant::now());
-            std::thread::sleep(DEBOUNCE);
 
             match std::fs::read_to_string(&path_clone)
                 .map_err(|e| e.to_string())
