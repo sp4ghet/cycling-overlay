@@ -22,20 +22,27 @@
   import { ffmpegMissing, cliMissing, loadError } from "../lib/runtime-stores";
   import { parseTimeSpec, formatTimeSpec } from "../lib/time";
 
-  // Local display state for the time-range inputs. Driven by the session
-  // store (so it updates when an activity loads and auto-fills the range),
-  // committed back to the store on blur/Enter after parseTimeSpec accepts
-  // the value. Invalid input reverts to the current session value.
-  let fromText = formatTimeSpec($session.from_seconds);
-  let toText = $session.to_seconds != null ? formatTimeSpec($session.to_seconds) : "";
+  // Uncontrolled time-range inputs: we grab DOM refs via bind:this and
+  // write `.value` manually when the session changes — but skip the write
+  // while the user is typing (document.activeElement guard) so the cursor
+  // doesn't warp on every auto-save tick of the session store.
+  let fromInput: HTMLInputElement | undefined;
+  let toInput: HTMLInputElement | undefined;
   let fromInvalid = false;
   let toInvalid = false;
 
-  $: fromText = formatTimeSpec($session.from_seconds);
-  $: toText = $session.to_seconds != null ? formatTimeSpec($session.to_seconds) : "";
+  $: if (fromInput && document.activeElement !== fromInput) {
+    const next = formatTimeSpec($session.from_seconds);
+    if (fromInput.value !== next) fromInput.value = next;
+  }
+  $: if (toInput && document.activeElement !== toInput) {
+    const next = $session.to_seconds != null ? formatTimeSpec($session.to_seconds) : "";
+    if (toInput.value !== next) toInput.value = next;
+  }
 
   function commitFrom() {
-    const val = parseTimeSpec(fromText);
+    if (!fromInput) return;
+    const val = parseTimeSpec(fromInput.value);
     if (val == null) {
       fromInvalid = true;
       return;
@@ -47,7 +54,8 @@
   }
 
   function commitTo() {
-    const val = parseTimeSpec(toText);
+    if (!toInput) return;
+    const val = parseTimeSpec(toInput.value);
     if (val == null) {
       toInvalid = true;
       return;
@@ -201,9 +209,9 @@
     <label>Time range (HH:MM:SS)</label>
     <div class="time-row">
       <input
+        bind:this={fromInput}
         type="text"
         inputmode="numeric"
-        bind:value={fromText}
         on:change={commitFrom}
         on:keydown={(e) => onKeydown(e, commitFrom)}
         class:invalid={fromInvalid}
@@ -211,9 +219,9 @@
       />
       <span>→</span>
       <input
+        bind:this={toInput}
         type="text"
         inputmode="numeric"
-        bind:value={toText}
         on:change={commitTo}
         on:keydown={(e) => onKeydown(e, commitTo)}
         class:invalid={toInvalid}
