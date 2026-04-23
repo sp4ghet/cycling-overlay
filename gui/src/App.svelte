@@ -12,11 +12,21 @@
     sessionLoad,
     probeFfmpeg,
     probeCli,
+    loadActivity,
+    loadLayout,
+    watchLayout,
+    previewFrame,
     onLayoutReloaded,
     onLayoutError,
   } from "./lib/tauri";
   import { requestPreview } from "./lib/preview-dispatcher";
-  import { session, previewT } from "./lib/stores";
+  import {
+    session,
+    previewT,
+    previewImage,
+    activityInfo,
+    layoutInfo,
+  } from "./lib/stores";
   import { ffmpegMissing, cliMissing, loadError } from "./lib/runtime-stores";
 
   let layoutError: string | null = null;
@@ -44,6 +54,46 @@
     probeCli(s.cli_path_override ?? undefined)
       .then(() => cliMissing.set(false))
       .catch(() => cliMissing.set(true));
+
+    // Session-restore: re-hydrate the backend AppState from the persisted
+    // paths. Without this, the sidebar shows the old paths but the backend
+    // has no activity/layout loaded — so preview, watcher, and export are
+    // all broken until the user re-picks the files manually.
+    const restoreErrors: string[] = [];
+    if (s.input_path) {
+      try {
+        const info = await loadActivity(s.input_path);
+        activityInfo.set(info);
+      } catch (e) {
+        restoreErrors.push(`activity ${s.input_path} (${e})`);
+        session.update((cur) => ({ ...cur, input_path: null }));
+      }
+    }
+    if (s.layout_path) {
+      try {
+        const info = await loadLayout(s.layout_path);
+        layoutInfo.set(info);
+        await watchLayout(s.layout_path);
+      } catch (e) {
+        restoreErrors.push(`layout ${s.layout_path} (${e})`);
+        session.update((cur) => ({ ...cur, layout_path: null }));
+      }
+    }
+    if (restoreErrors.length > 0) {
+      loadError.set(`Could not restore previous session: ${restoreErrors.join("; ")}`);
+    }
+
+    // Render an initial preview if both are loaded.
+    if (get(activityInfo) && get(layoutInfo)) {
+      const t0 = s.from_seconds ?? 0;
+      previewT.set(t0);
+      try {
+        const url = await previewFrame(t0);
+        previewImage.set(url);
+      } catch (e) {
+        console.debug("initial preview after restore failed:", e);
+      }
+    }
 
     const u1 = await onLayoutReloaded(async () => {
       layoutError = null;
